@@ -4,7 +4,7 @@
   "description": "",
   "main": "lib/es6/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --require ts-node/register --require source-map-support/register test/**/*.test.ts"
   },
   "repository": {
     "type": "git",
@@ -17,7 +17,9 @@
   },
   "homepage": "https://github.com/woutervh-/thoth#readme",
   "devDependencies": {
+    "@types/mocha": "^5.2.5",
     "@types/node": "^10.12.19",
+    "mocha": "^5.2.0",
     "ts-node": "^8.0.2",
     "tslint": "^5.12.1",
     "typescript": "^3.2.4"

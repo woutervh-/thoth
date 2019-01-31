@@ -15,7 +15,13 @@
             "array"
         ],
         "max-line-length": false,
-        "trailing-comma": false,
+        "trailing-comma": [
+            true,
+            {
+                "multiline": "never",
+                "singleline": "never"
+            }
+        ],
         "no-shadowed-variable": false
     },
     "rulesDirectory": []
