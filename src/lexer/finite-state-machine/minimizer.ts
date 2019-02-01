@@ -23,9 +23,11 @@ export class Minimizer {
         const reachableRejectingStates = new Set([...reachableStates].filter((state) => !acceptingStates.has(state)));
 
         // Get the actions of all reachable states.
-        const alphabet = fsm.transitions
-            .filter((transition) => reachableStates.has(transition[0]))
-            .map((transition) => transition[1]);
+        const alphabet = new Set(
+            fsm.transitions
+                .filter((transition) => reachableStates.has(transition[0]))
+                .map((transition) => transition[1])
+        );
 
         // Hopcroft's algorithm.
         const partitions: Set<Set<S>> = new Set([reachableAcceptingStates, reachableRejectingStates]);
