@@ -103,5 +103,29 @@ describe('Deterministic', () => {
             };
             assert.deepStrictEqual(actual, expected);
         });
+
+        it('produces an equivalent deterministic state machine #4', () => {
+            const fsm: FiniteStateMachine<number, string> = {
+                acceptingStates: [5],
+                initialState: 1,
+                transitions: [
+                    [1, 'a', 3], [1, 'a', 4], [1, 'a', 5],
+                    [2, 'a', 4], [2, 'a', 5],
+                    [3, 'b', 4],
+                    [4, 'a', 5], [4, 'b', 5]
+                ]
+            };
+            const actual = Deterministic.deterministic(fsm);
+            const expected: FiniteStateMachine<number[], string> = {
+                acceptingStates: [[3, 4, 5], [5], [4, 5]],
+                initialState: [1],
+                transitions: [
+                    [[1], 'a', [3, 4, 5]],
+                    [[3, 4, 5], 'a', [5]], [[3, 4, 5], 'b', [4, 5]],
+                    [[4, 5], 'a', [5]], [[4, 5], 'b', [5]]
+                ]
+            };
+            assert.deepStrictEqual(actual, expected);
+        });
     });
 });
