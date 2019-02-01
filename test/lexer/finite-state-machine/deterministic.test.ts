@@ -1,10 +1,10 @@
 import * as assert from 'assert';
-import { FiniteStateMachine } from '../../../src/lexer/finite-state-machine/finite-state-machine';
 import { Deterministic } from '../../../src/lexer/finite-state-machine/deterministic';
+import { FiniteStateMachine } from '../../../src/lexer/finite-state-machine/finite-state-machine';
 
 describe('Deterministic', () => {
     describe('Deterministic.deterministic', () => {
-        it('produces an equivalent deterministic state machine', () => {
+        it('produces an equivalent deterministic state machine #1', () => {
             const fsm1: FiniteStateMachine<string, number> = {
                 acceptingStates: ['e'],
                 initialState: 'a',
@@ -39,6 +39,34 @@ describe('Deterministic', () => {
                     [['b'], 0, ['c']],
                     [['b'], 1, ['e']],
                     [['c'], 1, ['b']]
+                ]
+            };
+            assert.deepStrictEqual(actual, expected);
+        });
+
+        it('produces an equivalent deterministic state machine #2', () => {
+            const fsm1: FiniteStateMachine<number, string> = {
+                acceptingStates: [0, 1],
+                initialState: 0,
+                transitions: [
+                    [0, 'a', 1], [0, 'a', 2],
+                    [1, 'a', 1], [1, 'a', 2],
+                    [2, 'b', 1], [2, 'b', 3],
+                    [3, 'a', 1], [3, 'a', 2]
+                ]
+            };
+            const actual = Deterministic.deterministic(fsm1);
+            const expected: FiniteStateMachine<number[], string> = {
+                acceptingStates: [
+                    [0],
+                    [1, 2],
+                    [1, 3]
+                ],
+                initialState: [0],
+                transitions: [
+                    [[0], 'a', [1, 2]],
+                    [[1, 2], 'a', [1, 2]], [[1, 2], 'b', [1, 3]],
+                    [[1, 3], 'a', [1, 2]]
                 ]
             };
             assert.deepStrictEqual(actual, expected);
