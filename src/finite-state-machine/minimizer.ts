@@ -39,8 +39,6 @@ export class Minimizer {
                         .filter((transition) => transition[1] === token && targets.has(transition[2]))
                         .map((transition) => transition[0])
                 );
-                const oldPartitions: Set<S>[] = [];
-                const newPartitions: Set<S>[] = [];
                 for (const partition of partitions) {
                     const intersection = new Set([...partition].filter((state) => sources.has(state)));
                     const difference = new Set([...partition].filter((state) => !sources.has(state)));
@@ -48,9 +46,6 @@ export class Minimizer {
                         partitions.delete(partition);
                         partitions.add(intersection);
                         partitions.add(difference);
-                        // oldPartitions.push(partition);
-                        // newPartitions.push(intersection);
-                        // newPartitions.push(difference);
                         if (waiting.has(partition)) {
                             waiting.delete(partition);
                             waiting.add(intersection);
@@ -63,12 +58,6 @@ export class Minimizer {
                             }
                         }
                     }
-                }
-                for (const partition of oldPartitions) {
-                    partitions.delete(partition);
-                }
-                for (const partition of newPartitions) {
-                    partitions.add(partition);
                 }
             }
         }
