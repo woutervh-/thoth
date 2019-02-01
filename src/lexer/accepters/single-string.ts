@@ -1,4 +1,4 @@
-import { Accepter } from '../accepter';
+import { Accepter } from './accepter';
 
 export class SingleString implements Accepter<string> {
     private text: string;
