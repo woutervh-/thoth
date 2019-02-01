@@ -11,8 +11,7 @@ export class Minimizer {
 
             // Find targets that are not in the set of reachable states yet.
             const nextStates = fsm.transitions
-                .filter((transition) => transition[0] === state)
-                .filter((transition) => !reachableStates.has(transition[2]))
+                .filter((transition) => transition[0] === state && !reachableStates.has(transition[2]))
                 .map((transition) => transition[2]);
             // Add them to the queue.
             queue.push(...nextStates);

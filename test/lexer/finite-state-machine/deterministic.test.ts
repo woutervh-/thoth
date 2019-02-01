@@ -20,9 +20,9 @@ describe('Deterministic', () => {
             const actual = Deterministic.deterministic(fsm1);
             const expected: FiniteStateMachine<string[], number> = {
                 acceptingStates: [
+                    ['a', 'b', 'c', 'd', 'e'],
                     ['d', 'e'],
                     ['e'],
-                    ['a', 'b', 'c', 'd', 'e'],
                     ['d', 'e', 'b'],
                     ['c', 'e']
                 ],

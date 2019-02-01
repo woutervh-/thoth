@@ -1,6 +1,7 @@
 // import { Accepter } from './accepters/accepter';
 // import { SingleString } from './accepters/single-string';
 import { Builder } from './finite-state-machine/builder';
+import { Deterministic } from './finite-state-machine/deterministic';
 // import { FiniteStateMachine } from './finite-state-machine/finite-state-machine';
 import { Minimizer } from './finite-state-machine/minimizer';
 
@@ -61,8 +62,9 @@ const fsm = Builder
         ]),
         Builder.terminal('e')
     ])
-    .any()
+    .optional().many()
     .build();
 
 console.log(JSON.stringify(fsm));
-console.log(JSON.stringify(Minimizer.minimize(fsm)));
+console.log(JSON.stringify(Deterministic.deterministic(fsm)));
+console.log(JSON.stringify(Minimizer.minimize(Deterministic.deterministic(fsm))));
