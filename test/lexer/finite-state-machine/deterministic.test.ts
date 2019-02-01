@@ -18,27 +18,27 @@ describe('Deterministic', () => {
                 ]
             };
             const actual = Deterministic.deterministic(fsm1);
-            const expected: FiniteStateMachine<Set<string>, number> = {
+            const expected: FiniteStateMachine<string[], number> = {
                 acceptingStates: [
-                    new Set(['a', 'b', 'c', 'd', 'e']),
-                    new Set(['d', 'e']),
-                    new Set(['b', 'd', 'e']),
-                    new Set(['e']),
-                    new Set(['c', 'e'])
+                    ['d', 'e'],
+                    ['e'],
+                    ['a', 'b', 'c', 'd', 'e'],
+                    ['d', 'e', 'b'],
+                    ['c', 'e']
                 ],
-                initialState: new Set(['a']),
+                initialState: ['a'],
                 transitions: [
-                    [new Set(['a']), 0, new Set(['a', 'b', 'c', 'd', 'e'])],
-                    [new Set(['a']), 1, new Set(['d', 'e'])],
-                    [new Set(['a', 'b', 'c', 'd', 'e']), 0, new Set(['a', 'b', 'c', 'd', 'e'])],
-                    [new Set(['a', 'b', 'c', 'd', 'e']), 1, new Set(['b', 'd', 'e'])],
-                    [new Set(['d', 'e']), 0, new Set(['e'])],
-                    [new Set(['b', 'd', 'e']), 0, new Set(['c', 'e'])],
-                    [new Set(['b', 'd', 'e']), 1, new Set(['e'])],
-                    [new Set(['c', 'e']), 1, new Set(['b'])],
-                    [new Set(['b']), 0, new Set(['c'])],
-                    [new Set(['b']), 1, new Set(['e'])],
-                    [new Set(['c']), 1, new Set(['b'])]
+                    [['a'], 0, ['a', 'b', 'c', 'd', 'e']],
+                    [['a'], 1, ['d', 'e']],
+                    [['d', 'e'], 0, ['e']],
+                    [['a', 'b', 'c', 'd', 'e'], 0, ['a', 'b', 'c', 'd', 'e']],
+                    [['a', 'b', 'c', 'd', 'e'], 1, ['d', 'e', 'b']],
+                    [['d', 'e', 'b'], 0, ['c', 'e']],
+                    [['d', 'e', 'b'], 1, ['e']],
+                    [['c', 'e'], 1, ['b']],
+                    [['b'], 0, ['c']],
+                    [['b'], 1, ['e']],
+                    [['c'], 1, ['b']]
                 ]
             };
             assert.deepStrictEqual(actual, expected);
