@@ -116,6 +116,18 @@ describe('Builder', () => {
         });
     });
 
+    describe('Builder.followedBy', () => {
+        it('builds a finite state machine which accepts the underlying state machines in succession', () => {
+            const actual = Builder.terminal('a').followedBy(Builder.terminal('b')).build();
+            const expected: FiniteStateMachine<number, string> = {
+                acceptingStates: [3],
+                initialState: 0,
+                transitions: [[0, 'a', 1], [2, 'b', 3], [1, 'b', 3]]
+            };
+            assert.deepStrictEqual(actual, expected);
+        });
+    });
+
     describe('Builder.repeat', () => {
         it('builds a finite state machine which accepts the underlying state machine for the given amount of times in succession', () => {
             const actual = Builder.terminal('a')

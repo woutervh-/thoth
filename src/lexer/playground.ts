@@ -4,6 +4,8 @@ import { Builder } from './finite-state-machine/builder';
 import { Converter } from './finite-state-machine/converter';
 import { Deterministic } from './finite-state-machine/deterministic';
 import { Minimizer } from './finite-state-machine/minimizer';
+import { WhitespaceAccepter } from './accepters/whitespace-accepter';
+import { CharacterAccepter } from './accepters/character-accepter';
 
 // class AccepterRunner {
 //     private initialState: number;
@@ -50,17 +52,24 @@ import { Minimizer } from './finite-state-machine/minimizer';
 // const runner = new AccepterRunner(fsm);
 
 const digitAccepter = new DigitAccepter();
+const whitespaceAccepter = new WhitespaceAccepter();
+const endOfTextAccepter = new CharacterAccepter('\u0003');
 
 const fsm = Builder
-    .terminal(digitAccepter)
+    .alternatives([
+        Builder.terminal(digitAccepter),
+        Builder.terminal(whitespaceAccepter)
+    ])
     .oneOrMore()
+    .followedBy(Builder.terminal(endOfTextAccepter))
     .build();
 
 const accepterMachine = Converter.convertStateToNumbers(Minimizer.minimize(Deterministic.deterministic(fsm)));
-const input = '123 a b 456';
+const input = '123 456 \u0003a b 789';
 const accepterRunner = new AccepterRunner(accepterMachine);
 const run = accepterRunner.run([...input]);
+const info = run.map((accepted) => [accepted.start, accepted.count, accepted.accepter.name]);
 
 console.log(JSON.stringify(accepterMachine));
 console.log(input);
-console.log(run);
+console.log(JSON.stringify(info, null, 2));

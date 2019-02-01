@@ -1,5 +1,7 @@
 export interface Accepter<T> {
-    isGreedy: boolean;
+    name: string;
+
+    isGreedy(): boolean;
 
     accept(input: T): boolean;
 }

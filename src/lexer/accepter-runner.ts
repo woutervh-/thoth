@@ -1,6 +1,12 @@
 import { Accepter } from './accepters/accepter';
 import { FiniteStateMachine } from './finite-state-machine/finite-state-machine';
 
+interface Accepted<T> {
+    accepter: Accepter<T>;
+    start: number;
+    count: number;
+}
+
 export class AccepterRunner<S, T> {
     private initialState: S;
 
@@ -20,16 +26,17 @@ export class AccepterRunner<S, T> {
         }
     }
 
-    public run(input: T[]): number | null {
+    public run(input: T[]): Accepted<T>[] {
         if (this.acceptingStates.has(this.initialState)) {
-            return 0;
+            return [];
         }
         let currentState = this.initialState;
         let i = 0;
+        const accepted: Accepted<T>[] = [];
         while (i < input.length) {
             const transition = this.transitionMap.get(currentState)!.find((transition) => transition[0].accept(input[i]));
             if (transition === undefined) {
-                return null;
+                return [];
             }
             let acceptedLength = 1;
             if (transition[0].isGreedy) {
@@ -37,12 +44,13 @@ export class AccepterRunner<S, T> {
                     acceptedLength += 1;
                 }
             }
+            accepted.push({ accepter: transition[0], start: i, count: acceptedLength });
             i += acceptedLength;
             if (this.acceptingStates.has(transition[1])) {
-                return i;
+                return accepted;
             }
             currentState = transition[1];
         }
-        return null;
+        return accepted;
     }
 }

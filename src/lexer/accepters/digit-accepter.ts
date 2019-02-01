@@ -1,7 +1,11 @@
 import { Accepter } from './accepter';
 
 export class DigitAccepter implements Accepter<string> {
-    public isGreedy = true;
+    public name = 'digit';
+
+    public isGreedy() {
+        return true;
+    }
 
     public accept(character: string) {
         return character === '0'

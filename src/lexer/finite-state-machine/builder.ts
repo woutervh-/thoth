@@ -156,6 +156,10 @@ export class Builder<T> {
         }
     }
 
+    public followedBy(term: Builder<T>) {
+        return Builder.sequence([this, term]);
+    }
+
     public build(): FiniteStateMachine<number, T> {
         return {
             acceptingStates: this.acceptingStates,
