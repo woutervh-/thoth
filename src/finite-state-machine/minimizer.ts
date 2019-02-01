@@ -62,21 +62,18 @@ export class Minimizer {
             }
         }
 
-        const partitionToState = new Map(
-            [...partitions].map<[Set<S>, S]>((partition) => [partition, partition.values().next().value])
-        );
-        const stateToPartition = new Map(
+        const partitionLeaderMap = new Map(
             [...partitions]
-                .map((partition) => [...partition].map<[S, Set<S>]>((state) => [state, partition]))
-                .reduce<[S, Set<S>][]>((flattened, entry) => (flattened.push(...entry), flattened), [])
+                .map((partition) => [...partition].map<[S, S]>((state) => [state, partition.values().next().value]))
+                .reduce<[S, S][]>((flattened, entry) => (flattened.push(...entry), flattened), [])
         );
 
         return {
-            acceptingStates: [...reachableAcceptingStates].filter((state) => state === partitionToState.get(stateToPartition.get(state)!)!),
-            initialState: partitionToState.get(stateToPartition.get(fsm.initialState)!)!,
+            acceptingStates: [...reachableAcceptingStates].filter((state) => state === partitionLeaderMap.get(state)!),
+            initialState: partitionLeaderMap.get(fsm.initialState)!,
             transitions: fsm.transitions
-                .filter((transition) => transition[0] === partitionToState.get(stateToPartition.get(transition[0])!)!)
-                .map<[S, T, S]>((transition) => [transition[0], transition[1], partitionToState.get(stateToPartition.get(transition[2])!)!])
+                .filter((transition) => transition[0] === partitionLeaderMap.get(transition[0])!)
+                .map<[S, T, S]>((transition) => [transition[0], transition[1], partitionLeaderMap.get(transition[2])!])
         };
     }
 }
