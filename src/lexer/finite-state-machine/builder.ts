@@ -144,6 +144,18 @@ export class Builder<T> {
         return Builder.optional(this);
     }
 
+    public repeat(times: number): Builder<T> {
+        if (times <= 0) {
+            return Builder.empty();
+        } else {
+            const terms: Builder<T>[] = [];
+            for (let i = 0; i < times; i++) {
+                terms.push(this);
+            }
+            return Builder.sequence(terms);
+        }
+    }
+
     public build(): FiniteStateMachine<number, T> {
         return {
             acceptingStates: this.acceptingStates,

@@ -4,6 +4,7 @@ import { Builder } from './finite-state-machine/builder';
 import { Deterministic } from './finite-state-machine/deterministic';
 // import { FiniteStateMachine } from './finite-state-machine/finite-state-machine';
 import { Minimizer } from './finite-state-machine/minimizer';
+import { Converter } from './finite-state-machine/converter';
 
 // class AccepterRunner {
 //     private initialState: number;
@@ -62,6 +63,7 @@ const fsm = Builder
         ]),
         Builder.terminal('e')
     ])
+    .repeat(2)
     .build();
 
-console.log(JSON.stringify(Minimizer.minimize(Deterministic.deterministic(fsm))));
+console.log(JSON.stringify(Converter.convertStateToNumbers(Minimizer.minimize(Deterministic.deterministic(fsm)))));
