@@ -1,6 +1,7 @@
+import { Runner } from '../runner';
 import { FiniteStateMachine } from './finite-state-machine';
 
-export class Runner<S, T> {
+export class FiniteStateMachineRunner<S, T> implements Runner<T> {
     private initialState: S;
 
     private acceptingStates: Set<S>;

@@ -1,16 +1,16 @@
 import * as assert from 'assert';
-import { FiniteStateMachine } from '../../src/finite-state-machine/finite-state-machine';
-import { Runner } from '../../src/finite-state-machine/runner';
+import { FiniteStateMachine } from '../../../src/lexer/finite-state-machine/finite-state-machine';
+import { FiniteStateMachineRunner } from '../../../src/lexer/finite-state-machine/finite-state-machine-runner';
 
-describe('Runner', () => {
-    describe('Runner.run', () => {
+describe('FiniteStateMachineRunner', () => {
+    describe('FiniteStateMachineRunner.run', () => {
         describe('empty expression', () => {
             const fsm: FiniteStateMachine<string, number> = {
                 acceptingStates: ['a'],
                 initialState: 'a',
                 transitions: []
             };
-            const runner = new Runner(fsm);
+            const runner = new FiniteStateMachineRunner(fsm);
 
             it('accepts immediately regardless of the sequence', () => {
                 assert.deepStrictEqual(runner.run([]), 0);
@@ -30,7 +30,7 @@ describe('Runner', () => {
                     ['b', 0, 'b'], ['b', 1, 'c']
                 ]
             };
-            const runner = new Runner(fsm);
+            const runner = new FiniteStateMachineRunner(fsm);
 
             it('rejects invalid sequences', () => {
                 assert.deepStrictEqual(runner.run([]), null);

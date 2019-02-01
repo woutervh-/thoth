@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { FiniteStateMachine } from '../../src/finite-state-machine/finite-state-machine';
-import { Minimizer } from '../../src/finite-state-machine/minimizer';
+import { FiniteStateMachine } from '../../../src/lexer/finite-state-machine/finite-state-machine';
+import { Minimizer } from '../../../src/lexer/finite-state-machine/minimizer';
 
 describe('Minimizer', () => {
     describe('Minimizer.minimize', () => {
