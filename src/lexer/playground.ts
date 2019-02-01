@@ -1,7 +1,9 @@
+import { AccepterRunner } from './accepter-runner';
+import { DigitAccepter } from './accepters/digit-accepter';
+import { Builder } from './finite-state-machine/builder';
 import { Converter } from './finite-state-machine/converter';
 import { Deterministic } from './finite-state-machine/deterministic';
 import { Minimizer } from './finite-state-machine/minimizer';
-import { TokenBuilder } from './token-builder';
 
 // class AccepterRunner {
 //     private initialState: number;
@@ -47,6 +49,18 @@ import { TokenBuilder } from './token-builder';
 
 // const runner = new AccepterRunner(fsm);
 
-const fsm = TokenBuilder.word('foobar').build();
+const digitAccepter = new DigitAccepter();
 
-console.log(JSON.stringify(Converter.convertStateToNumbers(Minimizer.minimize(Deterministic.deterministic(fsm)))));
+const fsm = Builder
+    .terminal(digitAccepter)
+    .many()
+    .build();
+
+const accepterMachine = Converter.convertStateToNumbers(Minimizer.minimize(Deterministic.deterministic(fsm)));
+const input = '123 a b 456';
+const accepterRunner = new AccepterRunner(accepterMachine);
+const run = accepterRunner.run([...input]);
+
+console.log(JSON.stringify(accepterMachine));
+console.log(input);
+console.log(run);

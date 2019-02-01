@@ -9,6 +9,19 @@ export class TokenBuilder {
         return new TokenBuilder(Builder.sequence(terms));
     }
 
+    public static whitespace() {
+        return new TokenBuilder(
+            Builder
+                .alternatives([
+                    Builder.terminal('\n'),
+                    Builder.terminal('\r'),
+                    Builder.terminal('\t'),
+                    Builder.terminal(' ')
+                ])
+                .any()
+        );
+    }
+
     private builder: Builder<string>;
 
     private constructor(builder: Builder<string>) {
