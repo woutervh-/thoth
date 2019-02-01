@@ -135,5 +135,107 @@ describe('Minimizer', () => {
             };
             assert.deepStrictEqual(actual, expected);
         });
+
+        it('produces minimal state machines #6', () => {
+            const fsm1: FiniteStateMachine<number, string> = {
+                acceptingStates: [1, 4],
+                initialState: 5,
+                transitions: [
+                    [0, 'a', 5],
+                    [1, 'a', 0],
+                    [2, 'a', 1],
+                    [3, 'a', 2],
+                    [4, 'a', 3],
+                    [5, 'a', 4]
+                ]
+            };
+            const actual = Minimizer.minimize(fsm1);
+            const expected: FiniteStateMachine<number, string> = {
+                acceptingStates: [4],
+                initialState: 5,
+                transitions: [
+                    [3, 'a', 5],
+                    [4, 'a', 3],
+                    [5, 'a', 4]
+                ]
+            };
+            assert.deepStrictEqual(actual, expected);
+        });
+
+        it('produces minimal state machines #7', () => {
+            const fsm1: FiniteStateMachine<number, string> = {
+                acceptingStates: [1, 2],
+                initialState: 0,
+                transitions: [
+                    [0, 'a', 2], [0, 'b', 1],
+                    [1, 'a', 1], [1, 'b', 2],
+                    [2, 'a', 2], [2, 'b', 2]
+                ]
+            };
+            const actual = Minimizer.minimize(fsm1);
+            const expected: FiniteStateMachine<number, string> = {
+                acceptingStates: [1],
+                initialState: 0,
+                transitions: [
+                    [0, 'a', 1], [0, 'b', 1],
+                    [1, 'a', 1], [1, 'b', 1]
+                ]
+            };
+            assert.deepStrictEqual(actual, expected);
+        });
+
+        it('produces minimal state machines #8', () => {
+            const fsm1: FiniteStateMachine<string, number> = {
+                acceptingStates: ['f', 'g'],
+                initialState: 'a',
+                transitions: [
+                    ['a', 0, 'h'], ['a', 1, 'b'],
+                    ['b', 0, 'h'], ['b', 1, 'a'],
+                    ['c', 0, 'e'], ['c', 1, 'f'],
+                    ['d', 0, 'e'], ['d', 1, 'f'],
+                    ['e', 0, 'f'], ['e', 1, 'g'],
+                    ['f', 0, 'f'], ['f', 1, 'f'],
+                    ['g', 0, 'g'], ['g', 1, 'f'],
+                    ['h', 0, 'c'], ['h', 1, 'c']
+                ]
+            };
+            const actual = Minimizer.minimize(fsm1);
+            const expected: FiniteStateMachine<string, number> = {
+                acceptingStates: ['f'],
+                initialState: 'a',
+                transitions: [
+                    ['a', 0, 'h'], ['a', 1, 'a'],
+                    ['c', 0, 'e'], ['c', 1, 'f'],
+                    ['e', 0, 'f'], ['e', 1, 'f'],
+                    ['f', 0, 'f'], ['f', 1, 'f'],
+                    ['h', 0, 'c'], ['h', 1, 'c']
+                ]
+            };
+            assert.deepStrictEqual(actual, expected);
+        });
+
+        it('produces minimal state machines #9', () => {
+            const fsm1: FiniteStateMachine<string, number> = {
+                acceptingStates: ['f', 'g', 'h', 'i'],
+                initialState: 'a',
+                transitions: [
+                    ['a', 0, 'b'],
+                    ['b', 0, 'c'], ['b', 1, 'f'],
+                    ['c', 0, 'd'], ['c', 1, 'g'],
+                    ['d', 0, 'e'], ['d', 1, 'h'],
+                    ['e', 0, 'e'], ['e', 1, 'i']
+                ]
+            };
+            const actual = Minimizer.minimize(fsm1);
+            const expected: FiniteStateMachine<string, number> = {
+                acceptingStates: ['f'],
+                initialState: 'a',
+                transitions: [
+                    ['a', 0, 'b'],
+                    ['b', 0, 'b'], ['b', 1, 'f']
+                ]
+            };
+            assert.deepStrictEqual(actual, expected);
+        });
     });
 });
