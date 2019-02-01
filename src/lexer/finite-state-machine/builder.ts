@@ -9,7 +9,7 @@ export class Builder<T> {
         return new Builder<T>(2, [1], 0, [[0, action, 1]]);
     }
 
-    public static oneOrMore<T>(term: Builder<T>) {
+    public static many<T>(term: Builder<T>) {
         const transitionsFromInitialState = term.transitions.filter((transition) => transition[0] === term.initialState);
         const transitions: [number, T, number][] = [];
         transitions.push(...term.transitions);
@@ -23,7 +23,7 @@ export class Builder<T> {
         return new Builder<T>(term.stateCounter, term.acceptingStates, term.initialState, transitions);
     }
 
-    public static optional<T>(term: Builder<T>) {
+    public static maybe<T>(term: Builder<T>) {
         let stateCounter = term.stateCounter;
         const initialState = stateCounter++;
         const transitions: [number, T, number][] = [];
@@ -37,8 +37,8 @@ export class Builder<T> {
         return new Builder<T>(stateCounter, acceptingStates, initialState, transitions);
     }
 
-    public static zeroOrMore<T>(term: Builder<T>) {
-        return Builder.optional(Builder.oneOrMore(term));
+    public static any<T>(term: Builder<T>) {
+        return Builder.maybe(Builder.many(term));
     }
 
     public static sequence<T>(terms: Builder<T>[]) {
@@ -132,16 +132,16 @@ export class Builder<T> {
         this.transitions = transitions;
     }
 
-    public any(): Builder<T> {
-        return Builder.zeroOrMore(this);
+    public zeroOrMore(): Builder<T> {
+        return Builder.any(this);
     }
 
-    public many(): Builder<T> {
-        return Builder.oneOrMore(this);
+    public oneOrMore(): Builder<T> {
+        return Builder.many(this);
     }
 
     public optional(): Builder<T> {
-        return Builder.optional(this);
+        return Builder.maybe(this);
     }
 
     public repeat(times: number): Builder<T> {

@@ -53,7 +53,7 @@ const digitAccepter = new DigitAccepter();
 
 const fsm = Builder
     .terminal(digitAccepter)
-    .many()
+    .oneOrMore()
     .build();
 
 const accepterMachine = Converter.convertStateToNumbers(Minimizer.minimize(Deterministic.deterministic(fsm)));

@@ -18,7 +18,7 @@ export class TokenBuilder {
                     Builder.terminal('\t'),
                     Builder.terminal(' ')
                 ])
-                .any()
+                .zeroOrMore()
         );
     }
 
