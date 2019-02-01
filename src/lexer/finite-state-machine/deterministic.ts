@@ -16,16 +16,22 @@ export class Deterministic {
                         .map((transition) => transition[2])
                 );
                 if (targets.size >= 1) {
-                    transitions.push([stateSet, action, targets]);
-                    let marked = false;
+                    let markedSetMatch: Set<S> | null = null;
                     for (const markedSet of markedSets) {
                         const intersection = new Set([...markedSet].filter((state) => targets.has(state)));
                         if (intersection.size === markedSet.size && intersection.size === targets.size) {
-                            marked = true;
+                            markedSetMatch = markedSet;
                             break;
                         }
                     }
-                    if (!marked) {
+                    transitions.push([
+                        stateSet,
+                        action,
+                        markedSetMatch === null
+                            ? targets
+                            : markedSetMatch
+                    ]);
+                    if (markedSetMatch === null) {
                         markedSets.add(targets);
                         waiting.push(targets);
                     }

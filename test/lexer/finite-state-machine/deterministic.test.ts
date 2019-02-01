@@ -5,7 +5,7 @@ import { FiniteStateMachine } from '../../../src/lexer/finite-state-machine/fini
 describe('Deterministic', () => {
     describe('Deterministic.deterministic', () => {
         it('produces an equivalent deterministic state machine #1', () => {
-            const fsm1: FiniteStateMachine<string, number> = {
+            const fsm: FiniteStateMachine<string, number> = {
                 acceptingStates: ['e'],
                 initialState: 'a',
                 transitions: [
@@ -17,7 +17,7 @@ describe('Deterministic', () => {
                     ['d', 0, 'e']
                 ]
             };
-            const actual = Deterministic.deterministic(fsm1);
+            const actual = Deterministic.deterministic(fsm);
             const expected: FiniteStateMachine<string[], number> = {
                 acceptingStates: [
                     ['a', 'b', 'c', 'd', 'e'],
@@ -45,7 +45,7 @@ describe('Deterministic', () => {
         });
 
         it('produces an equivalent deterministic state machine #2', () => {
-            const fsm1: FiniteStateMachine<number, string> = {
+            const fsm: FiniteStateMachine<number, string> = {
                 acceptingStates: [0, 1],
                 initialState: 0,
                 transitions: [
@@ -55,7 +55,7 @@ describe('Deterministic', () => {
                     [3, 'a', 1], [3, 'a', 2]
                 ]
             };
-            const actual = Deterministic.deterministic(fsm1);
+            const actual = Deterministic.deterministic(fsm);
             const expected: FiniteStateMachine<number[], string> = {
                 acceptingStates: [
                     [0],
@@ -67,6 +67,38 @@ describe('Deterministic', () => {
                     [[0], 'a', [1, 2]],
                     [[1, 2], 'a', [1, 2]], [[1, 2], 'b', [1, 3]],
                     [[1, 3], 'a', [1, 2]]
+                ]
+            };
+            assert.deepStrictEqual(actual, expected);
+        });
+
+        it('produces an equivalent deterministic state machine #3', () => {
+            const fsm: FiniteStateMachine<number, string> = {
+                acceptingStates: [8, 10, 12],
+                initialState: 12,
+                transitions: [
+                    [1, 'c', 6],
+                    [3, 'c', 6],
+                    [5, 'c', 6],
+                    [6, 'd', 8],
+                    [7, 'd', 8],
+                    [8, 'a', 1], [8, 'b', 3], [8, 'e', 10],
+                    [10, 'a', 1], [10, 'b', 3], [10, 'e', 10],
+                    [11, 'a', 1], [11, 'b', 3], [11, 'e', 10],
+                    [12, 'a', 1], [12, 'b', 3], [12, 'e', 10], [12, 'a', 1], [12, 'b', 3], [12, 'e', 10]
+                ]
+            };
+            const actual = Deterministic.deterministic(fsm);
+            const expected: FiniteStateMachine<number[], string> = {
+                acceptingStates: [[12], [10], [8]],
+                initialState: [12],
+                transitions: [
+                    [[12], 'a', [1]], [[12], 'b', [3]], [[12], 'e', [10]],
+                    [[10], 'a', [1]], [[10], 'b', [3]], [[10], 'e', [10]],
+                    [[3], 'c', [6]],
+                    [[6], 'd', [8]],
+                    [[8], 'a', [1]], [[8], 'b', [3]], [[8], 'e', [10]],
+                    [[1], 'c', [6]]
                 ]
             };
             assert.deepStrictEqual(actual, expected);
