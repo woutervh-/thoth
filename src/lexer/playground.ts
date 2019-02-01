@@ -62,9 +62,6 @@ const fsm = Builder
         ]),
         Builder.terminal('e')
     ])
-    .optional().many()
     .build();
 
-console.log(JSON.stringify(fsm));
-console.log(JSON.stringify(Deterministic.deterministic(fsm)));
 console.log(JSON.stringify(Minimizer.minimize(Deterministic.deterministic(fsm))));
