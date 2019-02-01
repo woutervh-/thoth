@@ -50,8 +50,16 @@ import { Minimizer } from './finite-state-machine/minimizer';
 
 const fsm = Builder
     .alternatives([
-        Builder.terminal('a'),
-        Builder.terminal('b')
+        Builder.sequence([
+            Builder
+                .alternatives([
+                    Builder.terminal('a'),
+                    Builder.terminal('b')
+                ]),
+            Builder.terminal('c'),
+            Builder.terminal('d')
+        ]),
+        Builder.terminal('e')
     ])
     .build();
 
