@@ -61,6 +61,7 @@ const fsm = Builder
         ]),
         Builder.terminal('e')
     ])
+    .any()
     .build();
 
 console.log(JSON.stringify(fsm));

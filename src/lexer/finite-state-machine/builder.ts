@@ -9,6 +9,38 @@ export class Builder<T> {
         return new Builder<T>(2, [1], 0, [[0, action, 1]]);
     }
 
+    public static oneOrMore<T>(term: Builder<T>) {
+        const transitionsFromInitialState = term.transitions.filter((transition) => transition[0] === term.initialState);
+        const transitions: [number, T, number][] = [];
+        transitions.push(...term.transitions);
+        for (const acceptingState of term.acceptingStates) {
+            transitions.push(
+                ...transitionsFromInitialState.map<[number, T, number]>((transition) =>
+                    [acceptingState, transition[1], transition[2]]
+                )
+            );
+        }
+        return new Builder<T>(term.stateCounter, term.acceptingStates, term.initialState, transitions);
+    }
+
+    public static optional<T>(term: Builder<T>) {
+        let stateCounter = term.stateCounter;
+        const initialState = stateCounter++;
+        const transitions: [number, T, number][] = [];
+        transitions.push(...term.transitions);
+        transitions.push(
+            ...term.transitions
+                .filter((transition) => transition[0] === term.initialState)
+                .map<[number, T, number]>((transition) => [initialState, transition[1], transition[2]])
+        );
+        const acceptingStates = [...term.acceptingStates, initialState];
+        return new Builder<T>(stateCounter, acceptingStates, initialState, transitions);
+    }
+
+    public static zeroOrMore<T>(term: Builder<T>) {
+        return Builder.optional(Builder.oneOrMore(term));
+    }
+
     public static sequence<T>(terms: Builder<T>[]) {
         const stateCounterOffsets: number[] = [0];
         for (let i = 1; i < terms.length; i++) {
@@ -98,6 +130,18 @@ export class Builder<T> {
         this.acceptingStates = acceptingStates;
         this.initialState = initialState;
         this.transitions = transitions;
+    }
+
+    public any(): Builder<T> {
+        return Builder.zeroOrMore(this);
+    }
+
+    public many(): Builder<T> {
+        return Builder.oneOrMore(this);
+    }
+
+    public optional(): Builder<T> {
+        return Builder.optional(this);
     }
 
     public build(): FiniteStateMachine<number, T> {
