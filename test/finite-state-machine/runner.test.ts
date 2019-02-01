@@ -4,6 +4,23 @@ import { Runner } from '../../src/finite-state-machine/runner';
 
 describe('Runner', () => {
     describe('Runner.run', () => {
+        describe('empty expression', () => {
+            const fsm: FiniteStateMachine<string, number> = {
+                acceptingStates: ['a'],
+                initialState: 'a',
+                transitions: []
+            };
+            const runner = new Runner(fsm);
+
+            it('accepts immediately regardless of the sequence', () => {
+                assert.deepStrictEqual(runner.run([]), 0);
+                assert.deepStrictEqual(runner.run([0]), 0);
+                assert.deepStrictEqual(runner.run([1]), 0);
+                assert.deepStrictEqual(runner.run([0, 1]), 0);
+                assert.deepStrictEqual(runner.run([0, 1, 2]), 0);
+            });
+        });
+
         describe('regular expression /^0+1/', () => {
             const fsm: FiniteStateMachine<string, number> = {
                 acceptingStates: ['c'],
