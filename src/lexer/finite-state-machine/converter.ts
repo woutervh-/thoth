@@ -5,9 +5,9 @@ export class Converter {
         let counter: number = 0;
         const states: Set<S> = new Set([
             fsm.initialState,
-            ...fsm.acceptingStates,
             ...fsm.transitions.map((transition) => transition[0]),
-            ...fsm.transitions.map((transition) => transition[2])
+            ...fsm.transitions.map((transition) => transition[2]),
+            ...fsm.acceptingStates
         ]);
         const stateMap: Map<S, number> = new Map();
         for (const state of states) {

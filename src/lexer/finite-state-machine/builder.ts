@@ -82,36 +82,36 @@ export class Builder<T> {
         return new Builder<T>(stateCounter, acceptingStates, initialState, transitions);
     }
 
-    public static alternatives<T>(alternatives: Builder<T>[]) {
+    public static alternatives<T>(terms: Builder<T>[]) {
         const stateCounterOffsets: number[] = [0];
-        for (let i = 1; i < alternatives.length; i++) {
-            stateCounterOffsets.push(stateCounterOffsets[i - 1] + alternatives[i - 1].stateCounter);
+        for (let i = 1; i < terms.length; i++) {
+            stateCounterOffsets.push(stateCounterOffsets[i - 1] + terms[i - 1].stateCounter);
         }
 
-        let stateCounter = stateCounterOffsets[stateCounterOffsets.length - 1] + alternatives[alternatives.length - 1].stateCounter;
+        let stateCounter = stateCounterOffsets[stateCounterOffsets.length - 1] + terms[terms.length - 1].stateCounter;
 
-        const stateMappings: Map<number, number>[] = alternatives.map(() => new Map());
-        for (let i = 0; i < alternatives.length; i++) {
-            for (const transition of alternatives[i].transitions) {
+        const stateMappings: Map<number, number>[] = terms.map(() => new Map());
+        for (let i = 0; i < terms.length; i++) {
+            for (const transition of terms[i].transitions) {
                 stateMappings[i].set(transition[0], transition[0] + stateCounterOffsets[i]);
                 stateMappings[i].set(transition[2], transition[2] + stateCounterOffsets[i]);
             }
-            stateMappings[i].set(alternatives[i].initialState, stateCounter);
+            stateMappings[i].set(terms[i].initialState, stateCounter);
         }
 
         const transitions: [number, T, number][] = [];
-        for (let i = 0; i < alternatives.length; i++) {
+        for (let i = 0; i < terms.length; i++) {
             transitions.push(
-                ...alternatives[i].transitions.map<[number, T, number]>(
+                ...terms[i].transitions.map<[number, T, number]>(
                     (transition) => [stateMappings[i].get(transition[0])!, transition[1], stateMappings[i].get(transition[2])!]
                 )
             );
         }
 
         const acceptingStates: number[] = [];
-        for (let i = 0; i < alternatives.length; i++) {
+        for (let i = 0; i < terms.length; i++) {
             acceptingStates.push(
-                ...alternatives[i].acceptingStates.map((state) => stateMappings[i].get(state)!)
+                ...terms[i].acceptingStates.map((state) => stateMappings[i].get(state)!)
             );
         }
 

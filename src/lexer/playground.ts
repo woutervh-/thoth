@@ -1,10 +1,7 @@
-// import { Accepter } from './accepters/accepter';
-// import { SingleString } from './accepters/single-string';
-import { Builder } from './finite-state-machine/builder';
-import { Deterministic } from './finite-state-machine/deterministic';
-// import { FiniteStateMachine } from './finite-state-machine/finite-state-machine';
-import { Minimizer } from './finite-state-machine/minimizer';
 import { Converter } from './finite-state-machine/converter';
+import { Deterministic } from './finite-state-machine/deterministic';
+import { Minimizer } from './finite-state-machine/minimizer';
+import { TokenBuilder } from './token-builder';
 
 // class AccepterRunner {
 //     private initialState: number;
@@ -50,20 +47,6 @@ import { Converter } from './finite-state-machine/converter';
 
 // const runner = new AccepterRunner(fsm);
 
-const fsm = Builder
-    .alternatives([
-        Builder.sequence([
-            Builder
-                .alternatives([
-                    Builder.terminal('a'),
-                    Builder.terminal('b')
-                ]),
-            Builder.terminal('c'),
-            Builder.terminal('d')
-        ]),
-        Builder.terminal('e')
-    ])
-    .repeat(2)
-    .build();
+const fsm = TokenBuilder.word('foobar').build();
 
 console.log(JSON.stringify(Converter.convertStateToNumbers(Minimizer.minimize(Deterministic.deterministic(fsm)))));
