@@ -55,29 +55,11 @@ import { Minimizer } from './finite-state-machine/minimizer';
 
 const digitAccepter: Accepter<string> = new DigitAccepter();
 const whitespaceAccepter: Accepter<string> = new WhitespaceAccepter();
-// const plusAccepter: Accepter<string> = new CharacterAccepter('+');
+const plusAccepter: Accepter<string> = new CharacterAccepter('+');
 const equalsAccepter: Accepter<string> = new CharacterAccepter('=');
 const underscoreAccepter: Accepter<string> = new CharacterAccepter('_');
 const semiColonAccepter: Accepter<string> = new CharacterAccepter(';');
 const letterAccepter: Accepter<string> = new LatinAlphabetAccepter();
-
-// console.log(JSON.stringify(
-//     Minimizer.minimize(Converter.convertStateToNumbers(Deterministic.deterministic(
-//         Builder
-//             .alternatives([
-//                 Builder.terminal(underscoreAccepter)
-//             ])
-//             .followedBy(
-//                 Builder
-//                     .alternatives([
-//                         Builder.terminal(underscoreAccepter),
-//                         Builder.terminal(letterAccepter)
-//                     ])
-//                     .zeroOrMore()
-//             )
-//             .build()
-//     )))
-// ));
 
 const identifier = Builder
     .alternatives([
@@ -105,10 +87,10 @@ const statement = identifier
     .followedBy(Builder.terminal(equalsAccepter))
     .followedBy(optionalWhitespace)
     .followedBy(integer)
-    // .followedBy(optionalWhitespace)
-    // .followedBy(Builder.terminal(plusAccepter))
-    // .followedBy(optionalWhitespace)
-    // .followedBy(integer)
+    .followedBy(optionalWhitespace)
+    .followedBy(Builder.terminal(plusAccepter))
+    .followedBy(optionalWhitespace)
+    .followedBy(integer)
     .followedBy(optionalWhitespace)
     .followedBy(Builder.terminal(semiColonAccepter));
 
@@ -117,8 +99,7 @@ const fsm = statement
     .build();
 
 const accepterMachine = Minimizer.minimize(Converter.convertStateToNumbers(Deterministic.deterministic(fsm)));
-// const input = 'foo = 123 + 456;';
-const input = 'foo = 123;';
+const input = 'foo = 123 + 456;';
 const accepterRunner = new AccepterRunner(accepterMachine);
 const run = accepterRunner.run([...input]);
 const info = run.map((accepted) => [accepted.start, accepted.count, accepted.accepter.name]);
