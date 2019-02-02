@@ -34,9 +34,9 @@ const statement = identifier
     .followedBy(Builder.terminal(equalsAccepter));
 
 const fsm = statement
-    .zeroOrMore()
     .build();
 
+Minimizer.minimize(Converter.convertStateToNumbers(Deterministic.deterministic(fsm)));
 const accepterMachine = Minimizer.minimize(Converter.convertStateToNumbers(Deterministic.deterministic(fsm)));
 
 const graphvizLines = [
