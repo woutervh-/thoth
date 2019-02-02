@@ -1,14 +1,25 @@
 import { FiniteStateMachine } from './finite-state-machine';
 
 export class Builder<T> {
+    /**
+     * Creates a builder for the finite state machine which accepts immediately.
+     */
     public static empty<T>() {
         return new Builder<T>(1, [0], 0, []);
     }
 
+    /**
+     * Creates a builder for the finite state machine which accepts after a single action.
+     * @param action the action which the finite state machine will accept.
+     */
     public static terminal<T>(action: T) {
         return new Builder<T>(2, [1], 0, [[0, action, 1]]);
     }
 
+    /**
+     * Creates a builder for the finite state machine which accepts the language of the underlying finite state machine once or more.
+     * @param term the builder for the underlying finite state machine.
+     */
     public static many<T>(term: Builder<T>) {
         const transitionsFromInitialState = term.transitions.filter((transition) => transition[0] === term.initialState);
         const transitions: [number, T, number][] = [];
@@ -23,6 +34,10 @@ export class Builder<T> {
         return new Builder<T>(term.stateCounter, term.acceptingStates, term.initialState, transitions);
     }
 
+    /**
+     * Creates a builder for the finite state machine that immediately accepts or accepts the language of the underlying finite state machine.
+     * @param term the builder for the underlying finite state machine.
+     */
     public static maybe<T>(term: Builder<T>) {
         let stateCounter = term.stateCounter;
         const initialState = stateCounter++;
@@ -37,10 +52,19 @@ export class Builder<T> {
         return new Builder<T>(stateCounter, acceptingStates, initialState, transitions);
     }
 
+    /**
+     * Creates a builder for the finite state machine which accepts the language of the underlying finite state machine zero or more times.
+     * @param term the builder for the underlying finite state machine.
+     */
     public static any<T>(term: Builder<T>) {
         return Builder.maybe(Builder.many(term));
     }
 
+    /**
+     * Creates a builder for the finite state machine whichs accepts the language of the first finite state machine followed by the language of the second.
+     * @param first the builder for the first finite state machine.
+     * @param second the builder for the second finite state machine.
+     */
     public static succession<T>(first: Builder<T>, second: Builder<T>) {
         const stateCounter = first.stateCounter + second.stateCounter;
         const initialState = first.initialState;
@@ -70,46 +94,66 @@ export class Builder<T> {
         return new Builder<T>(stateCounter, acceptingStates, initialState, transitions);
     }
 
+    /**
+     * Creates a builder for the finite state machine which accepts the languages of the underlying finite state machines on after another in succession.
+     * @param terms the builders for the underlying finite state machines.
+     */
     public static sequence<T>(terms: Builder<T>[]) {
         return terms.reduce((first, second) => Builder.succession(first, second));
     }
 
-    public static alternatives<T>(terms: Builder<T>[]) {
-        const stateCounterOffsets: number[] = [0];
-        for (let i = 1; i < terms.length; i++) {
-            stateCounterOffsets.push(stateCounterOffsets[i - 1] + terms[i - 1].stateCounter);
-        }
-
-        let stateCounter = stateCounterOffsets[stateCounterOffsets.length - 1] + terms[terms.length - 1].stateCounter;
-
-        const stateMappings: Map<number, number>[] = terms.map(() => new Map());
-        for (let i = 0; i < terms.length; i++) {
-            for (const transition of terms[i].transitions) {
-                stateMappings[i].set(transition[0], transition[0] + stateCounterOffsets[i]);
-                stateMappings[i].set(transition[2], transition[2] + stateCounterOffsets[i]);
-            }
-            stateMappings[i].set(terms[i].initialState, stateCounter);
-        }
-
-        const transitions: [number, T, number][] = [];
-        for (let i = 0; i < terms.length; i++) {
-            transitions.push(
-                ...terms[i].transitions.map<[number, T, number]>(
-                    (transition) => [stateMappings[i].get(transition[0])!, transition[1], stateMappings[i].get(transition[2])!]
-                )
-            );
-        }
-
+    /**
+     * Creates a builder for the finite state machine which accepts either the language of the first finite state machine or the second.
+     * @param first the builder for the first finite state machine.
+     * @param second the builder for the second finite state machine.
+     */
+    public static either<T>(first: Builder<T>, second: Builder<T>) {
+        const stateCounter = first.stateCounter + second.stateCounter + 1;
+        const initialState = first.stateCounter + second.stateCounter;
         const acceptingStates: number[] = [];
-        for (let i = 0; i < terms.length; i++) {
-            acceptingStates.push(
-                ...terms[i].acceptingStates.map((state) => stateMappings[i].get(state)!)
-            );
+        acceptingStates.push(
+            ...first.acceptingStates
+        );
+        acceptingStates.push(
+            ...second.acceptingStates
+                .map((state) => state + first.stateCounter)
+        );
+        if (first.acceptingStates.includes(first.initialState) || second.acceptingStates.includes(second.initialState)) {
+            acceptingStates.push(initialState);
         }
-
-        const initialState = stateCounter++;
-
+        const transitions: [number, T, number][] = [];
+        transitions.push(
+            ...first.transitions
+        );
+        transitions.push(
+            ...second.transitions
+                .map<[number, T, number]>(
+                    (transition) => [transition[0] + first.stateCounter, transition[1], transition[2] + first.stateCounter]
+                )
+        );
+        transitions.push(
+            ...first.transitions
+                .filter((transition) => transition[0] === first.initialState)
+                .map<[number, T, number]>(
+                    (transition) => [initialState, transition[1], transition[2]]
+                )
+        );
+        transitions.push(
+            ...second.transitions
+                .filter((transition) => transition[0] === second.initialState)
+                .map<[number, T, number]>(
+                    (transition) => [initialState, transition[1], transition[2] + first.stateCounter]
+                )
+        );
         return new Builder<T>(stateCounter, acceptingStates, initialState, transitions);
+    }
+
+    /**
+     * Creates a builder for the finite state machine which accepts any of the languages of the underlying finite state machines.
+     * @param terms the builders for the underlying finite state machines.
+     */
+    public static alternatives<T>(terms: Builder<T>[]) {
+        return terms.reduce((first, second) => Builder.either(first, second));
     }
 
     private stateCounter: number;
@@ -124,18 +168,31 @@ export class Builder<T> {
         this.transitions = transitions;
     }
 
+    /**
+     * Creates a builder for the finite state machine which repeats this builder's finite state machine zero or more times.
+     */
     public zeroOrMore(): Builder<T> {
         return Builder.any(this);
     }
 
+    /**
+     * Creates a builder for the finite state machine which repeats this builder's finite state machine once or more.
+     */
     public oneOrMore(): Builder<T> {
         return Builder.many(this);
     }
 
+    /**
+     * Creates a builder for the finite state machine which immediately accepts or accepts the language of this builder's finite state machine.
+     */
     public optional(): Builder<T> {
         return Builder.maybe(this);
     }
 
+    /**
+     * Creates a builder for the finite state machine which repeats this builder's finite state machine exactly the specified amount of times.
+     * @param times the amount of times to repeat this builder's finite state machine.
+     */
     public repeat(times: number): Builder<T> {
         if (times <= 0) {
             return Builder.empty();
@@ -148,10 +205,17 @@ export class Builder<T> {
         }
     }
 
-    public followedBy(term: Builder<T>) {
-        return Builder.sequence([this, term]);
+    /**
+     * Creates a builder for the finite state machine which accepts the language of this builder's finite state machine followed by the language of the given builder's finite state machine.
+     * @param term builder whose finite state machine will be succeeding this builder's finite state machine.
+     */
+    public followedBy(term: Builder<T>): Builder<T> {
+        return Builder.succession(this, term);
     }
 
+    /**
+     * Complete the build and return the finite state machine.
+     */
     public build(): FiniteStateMachine<number, T> {
         return {
             acceptingStates: this.acceptingStates,
