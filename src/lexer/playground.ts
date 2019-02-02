@@ -61,6 +61,24 @@ const underscoreAccepter: Accepter<string> = new CharacterAccepter('_');
 const semiColonAccepter: Accepter<string> = new CharacterAccepter(';');
 const letterAccepter: Accepter<string> = new LatinAlphabetAccepter();
 
+// console.log(JSON.stringify(
+//     Minimizer.minimize(Converter.convertStateToNumbers(Deterministic.deterministic(
+//         Builder
+//             .alternatives([
+//                 Builder.terminal(underscoreAccepter)
+//             ])
+//             .followedBy(
+//                 Builder
+//                     .alternatives([
+//                         Builder.terminal(underscoreAccepter),
+//                         Builder.terminal(letterAccepter)
+//                     ])
+//                     .zeroOrMore()
+//             )
+//             .build()
+//     )))
+// ));
+
 const identifier = Builder
     .alternatives([
         Builder.terminal(underscoreAccepter),
@@ -98,8 +116,7 @@ const fsm = statement
     .zeroOrMore()
     .build();
 
-Minimizer.minimize(Converter.convertStateToNumbers(Deterministic.deterministic(fsm)));
-const accepterMachine = fsm;
+const accepterMachine = Minimizer.minimize(Converter.convertStateToNumbers(Deterministic.deterministic(fsm)));
 // const input = 'foo = 123 + 456;';
 const input = 'foo = 123;';
 const accepterRunner = new AccepterRunner(accepterMachine);

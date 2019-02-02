@@ -110,7 +110,22 @@ describe('Builder', () => {
             const expected: FiniteStateMachine<number, string> = {
                 acceptingStates: [3],
                 initialState: 0,
-                transitions: [[0, 'a', 1], [2, 'b', 3], [1, 'b', 3]]
+                transitions: [[2, 'b', 3], [0, 'a', 1], [1, 'b', 3]]
+            };
+            assert.deepStrictEqual(actual, expected);
+        });
+
+        it('correctly handles initial states which are accepting states', () => {
+            const actual = Builder
+                .sequence([
+                    Builder.terminal('a').optional(),
+                    Builder.terminal('b').optional()
+                ])
+                .build();
+            const expected: FiniteStateMachine<number, string> = {
+                acceptingStates: [4, 5, 1, 2],
+                initialState: 2,
+                transitions: [[3, 'b', 4], [5, 'b', 4], [0, 'a', 1], [2, 'a', 1], [1, 'b', 4], [2, 'b', 4]]
             };
             assert.deepStrictEqual(actual, expected);
         });
@@ -122,7 +137,7 @@ describe('Builder', () => {
             const expected: FiniteStateMachine<number, string> = {
                 acceptingStates: [3],
                 initialState: 0,
-                transitions: [[0, 'a', 1], [2, 'b', 3], [1, 'b', 3]]
+                transitions: [[2, 'b', 3], [0, 'a', 1], [1, 'b', 3]]
             };
             assert.deepStrictEqual(actual, expected);
         });
@@ -136,7 +151,7 @@ describe('Builder', () => {
             const expected: FiniteStateMachine<number, string> = {
                 acceptingStates: [3],
                 initialState: 0,
-                transitions: [[0, 'a', 1], [2, 'a', 3], [1, 'a', 3]]
+                transitions: [[2, 'a', 3], [0, 'a', 1], [1, 'a', 3]]
             };
             assert.deepStrictEqual(actual, expected);
         });
@@ -156,6 +171,11 @@ describe('Builder', () => {
                 transitions: [[4, 'a', 1], [4, 'b', 3]]
             };
             assert.deepStrictEqual(actual, expected);
+        });
+
+        it('correctly handles initial states which are accepting states', () => {
+            // TODO
+            throw new Error('Missing implementation.');
         });
     });
 });
