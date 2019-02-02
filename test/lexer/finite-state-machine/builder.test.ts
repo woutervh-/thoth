@@ -110,7 +110,7 @@ describe('Builder', () => {
             const expected: FiniteStateMachine<number, string> = {
                 acceptingStates: [3],
                 initialState: 0,
-                transitions: [[2, 'b', 3], [0, 'a', 1], [1, 'b', 3]]
+                transitions: [[0, 'a', 1], [2, 'b', 3], [1, 'b', 3]]
             };
             assert.deepStrictEqual(actual, expected);
         });
@@ -125,7 +125,7 @@ describe('Builder', () => {
             const expected: FiniteStateMachine<number, string> = {
                 acceptingStates: [4, 5, 1, 2],
                 initialState: 2,
-                transitions: [[3, 'b', 4], [5, 'b', 4], [0, 'a', 1], [2, 'a', 1], [1, 'b', 4], [2, 'b', 4]]
+                transitions: [[0, 'a', 1], [2, 'a', 1], [3, 'b', 4], [5, 'b', 4], [1, 'b', 4], [2, 'b', 4]]
             };
             assert.deepStrictEqual(actual, expected);
         });
@@ -137,7 +137,7 @@ describe('Builder', () => {
             const expected: FiniteStateMachine<number, string> = {
                 acceptingStates: [3],
                 initialState: 0,
-                transitions: [[2, 'b', 3], [0, 'a', 1], [1, 'b', 3]]
+                transitions: [[0, 'a', 1], [2, 'b', 3], [1, 'b', 3]]
             };
             assert.deepStrictEqual(actual, expected);
         });
@@ -151,7 +151,7 @@ describe('Builder', () => {
             const expected: FiniteStateMachine<number, string> = {
                 acceptingStates: [3],
                 initialState: 0,
-                transitions: [[2, 'a', 3], [0, 'a', 1], [1, 'a', 3]]
+                transitions: [[0, 'a', 1], [2, 'a', 3], [1, 'a', 3]]
             };
             assert.deepStrictEqual(actual, expected);
         });

@@ -44,9 +44,9 @@ export class Builder<T> {
     public static succession<T>(first: Builder<T>, second: Builder<T>) {
         const stateCounter = first.stateCounter + second.stateCounter;
         const initialState = first.initialState;
-        const acceptingStates = second.acceptingStates;
+        const acceptingStates = second.acceptingStates.map((state) => state + first.stateCounter);
         if (second.acceptingStates.includes(second.initialState)) {
-            acceptingStates.push(first.initialState);
+            acceptingStates.push(...first.acceptingStates);
         }
         const transitions: [number, T, number][] = [];
         transitions.push(
@@ -71,47 +71,7 @@ export class Builder<T> {
     }
 
     public static sequence<T>(terms: Builder<T>[]) {
-        const stateCounterOffsets: number[] = [0];
-        for (let i = 1; i < terms.length; i++) {
-            stateCounterOffsets.push(stateCounterOffsets[i - 1] + terms[i - 1].stateCounter);
-        }
-
-        const stateMappings: Map<number, number>[] = terms.map(() => new Map());
-        for (let i = 0; i < terms.length; i++) {
-            for (const transition of terms[i].transitions) {
-                stateMappings[i].set(transition[0], transition[0] + stateCounterOffsets[i]);
-                stateMappings[i].set(transition[2], transition[2] + stateCounterOffsets[i]);
-            }
-        }
-
-        const stateCounter = stateCounterOffsets[stateCounterOffsets.length - 1] + terms[terms.length - 1].stateCounter;
-        const initialState = stateMappings[0].get(terms[0].initialState)!;
-        const acceptingStates = new Set(terms[terms.length - 1].acceptingStates.map((state) => stateMappings[stateMappings.length - 1].get(state)!));
-
-        const transitions: [number, T, number][] = [];
-        for (let i = terms.length - 1; i >= 0; i--) {
-            transitions.push(
-                ...terms[i].transitions.map<[number, T, number]>(
-                    (transition) => [stateMappings[i].get(transition[0])!, transition[1], stateMappings[i].get(transition[2])!]
-                )
-            );
-            if (i < terms.length - 1) {
-                for (const acceptingState of terms[i].acceptingStates) {
-                    transitions.push(
-                        ...transitions
-                            .filter((transition) => transition[0] === stateMappings[i + 1].get(terms[i + 1].initialState))
-                            .map<[number, T, number]>(
-                                (transition) => [stateMappings[i].get(acceptingState)!, transition[1], transition[2]]
-                            )
-                    );
-                    if (acceptingStates.has(stateMappings[i + 1].get(terms[i + 1].initialState)!)) {
-                        acceptingStates.add(stateMappings[i].get(acceptingState)!);
-                    }
-                }
-            }
-        }
-
-        return new Builder<T>(stateCounter, [...acceptingStates], initialState, transitions);
+        return terms.reduce((first, second) => Builder.succession(first, second));
     }
 
     public static alternatives<T>(terms: Builder<T>[]) {
