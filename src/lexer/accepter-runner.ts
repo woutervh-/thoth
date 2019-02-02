@@ -10,13 +10,13 @@ interface Accepted<T> {
 export class AccepterRunner<S, T> {
     private initialState: S;
 
-    private acceptingStates: Set<S>;
+    private acceptingStates: S[];
 
     private transitionMap: Map<S, [Accepter<T>, S][]>;
 
     constructor(fsm: FiniteStateMachine<S, Accepter<T>>) {
         this.initialState = fsm.initialState;
-        this.acceptingStates = new Set(fsm.acceptingStates);
+        this.acceptingStates = fsm.acceptingStates;
         this.transitionMap = new Map();
         for (const transition of fsm.transitions) {
             if (!this.transitionMap.has(transition[0])) {
@@ -27,17 +27,15 @@ export class AccepterRunner<S, T> {
     }
 
     public run(input: T[]): Accepted<T>[] {
-        if (this.acceptingStates.has(this.initialState)) {
-            return [];
-        }
         let currentState = this.initialState;
         let i = 0;
         const accepted: Accepted<T>[] = [];
         while (i < input.length) {
-            const transition = this.transitionMap.get(currentState)!.find((transition) => transition[0].accept(input[i]));
-            if (transition === undefined) {
+            const transitions = this.transitionMap.get(currentState)!.filter((transition) => transition[0].accept(input[i]));
+            if (transitions.length !== 1) {
                 return [];
             }
+            const transition = transitions[0];
             let acceptedLength = 1;
             if (transition[0].isGreedy) {
                 while (transition[0].accept(input[i + acceptedLength])) {
@@ -46,11 +44,12 @@ export class AccepterRunner<S, T> {
             }
             accepted.push({ accepter: transition[0], start: i, count: acceptedLength });
             i += acceptedLength;
-            if (this.acceptingStates.has(transition[1])) {
-                return accepted;
-            }
             currentState = transition[1];
         }
-        return accepted;
+        if (this.acceptingStates.includes(currentState)) {
+            return accepted;
+        } else {
+            return [];
+        }
     }
 }

@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "target": "es6",
+        "target": "es2016",
         "module": "commonjs",
         "strict": true,
         "sourceMap": true,
@@ -8,7 +8,7 @@
         "noImplicitAny": true,
         "noImplicitThis": true,
         "lib": [
-            "es6"
+            "es2016"
         ],
         "types": [
             "node",

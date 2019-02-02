@@ -6,8 +6,8 @@ export class CharacterAccepter implements Accepter<string> {
     private character: string;
 
     constructor(character: string) {
+        this.name = character;
         this.character = character;
-        this.name = `character ${character}`;
     }
 
     public isGreedy() {
