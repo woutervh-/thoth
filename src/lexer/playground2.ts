@@ -41,16 +41,17 @@ const fsm = statement
     .zeroOrMore()
     .build();
 
-Minimizer.minimize(Converter.convertStateToNumbers(Deterministic.deterministic(fsm)));
-const accepterMachine = fsm;
+const accepterMachine = Minimizer.minimize(Converter.convertStateToNumbers(Deterministic.deterministic(fsm)));
 
 const graphvizLines = [
     'digraph finite_state_machine {',
     'rankdir=LR;',
     'size="8,5"',
-    `node [shape = doublecircle]; ${accepterMachine.acceptingStates.join(' ')};`,
+    `node [style = filled] S${accepterMachine.initialState};`,
+    'node [style = solid];',
+    `node [shape = doublecircle]; ${accepterMachine.acceptingStates.map((state) => `S${state}`).join(' ')};`,
     'node [shape = circle];',
-    ...accepterMachine.transitions.map((transition) => `${transition[0]} -> ${transition[2]} [ label = "${transition[1].name}" ];`),
+    ...accepterMachine.transitions.map((transition) => `S${transition[0]} -> S${transition[2]} [ label = "${transition[1].name}" ];`),
     '}'
 ];
 console.log(graphvizLines.join('\n'));

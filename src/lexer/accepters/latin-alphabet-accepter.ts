@@ -1,7 +1,7 @@
 import { Accepter } from './accepter';
 
 export class LatinAlphabetAccepter implements Accepter<string> {
-    public name = 'latin alphabet';
+    public name = 'a-Z';
 
     public accept(character: string) {
         if (character.length >= 1) {
