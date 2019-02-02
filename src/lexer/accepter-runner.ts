@@ -37,7 +37,7 @@ export class AccepterRunner<S, T> {
             }
             const transition = transitions[0];
             let acceptedLength = 1;
-            if (transition[0].isGreedy) {
+            if (false /* transition[0].isGreedy */) {
                 while (transition[0].accept(input[i + acceptedLength])) {
                     acceptedLength += 1;
                 }

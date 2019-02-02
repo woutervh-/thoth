@@ -10,10 +10,6 @@ export class CharacterAccepter implements Accepter<string> {
         this.character = character;
     }
 
-    public isGreedy() {
-        return false;
-    }
-
     public accept(character: string) {
         return character === this.character;
     }

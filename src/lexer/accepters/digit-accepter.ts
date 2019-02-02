@@ -3,10 +3,6 @@ import { Accepter } from './accepter';
 export class DigitAccepter implements Accepter<string> {
     public name = 'digit';
 
-    public isGreedy() {
-        return true;
-    }
-
     public accept(character: string) {
         return character === '0'
             || character === '1'
