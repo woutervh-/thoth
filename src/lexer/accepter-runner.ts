@@ -9,14 +9,12 @@ interface Accepted<T> {
 
 export class AccepterRunner<S, T> {
     private initialState: S;
-
-    private acceptingStates: S[];
-
+    private acceptingStates: Set<S>;
     private transitionMap: Map<S, [Accepter<T>, S][]>;
 
     constructor(fsm: FiniteStateMachine<S, Accepter<T>>) {
         this.initialState = fsm.initialState;
-        this.acceptingStates = fsm.acceptingStates;
+        this.acceptingStates = new Set(fsm.acceptingStates);
         this.transitionMap = new Map();
         for (const transition of fsm.transitions) {
             if (!this.transitionMap.has(transition[0])) {
@@ -26,30 +24,22 @@ export class AccepterRunner<S, T> {
         }
     }
 
-    public run(input: T[]): Accepted<T>[] {
+    public run(input: T[]): number | null {
+        if (this.acceptingStates.has(this.initialState)) {
+            return 0;
+        }
         let currentState = this.initialState;
-        let i = 0;
-        const accepted: Accepted<T>[] = [];
-        while (i < input.length) {
+        for (let i = 0; i < input.length; i++) {
             const transitions = this.transitionMap.get(currentState)!.filter((transition) => transition[0].accept(input[i]));
             if (transitions.length !== 1) {
-                return [];
+                return null;
             }
             const transition = transitions[0];
-            let acceptedLength = 1;
-            if (false /* transition[0].isGreedy */) {
-                while (transition[0].accept(input[i + acceptedLength])) {
-                    acceptedLength += 1;
-                }
-            }
-            accepted.push({ accepter: transition[0], start: i, count: acceptedLength });
-            i += acceptedLength;
             currentState = transition[1];
+            if (this.acceptingStates.has(currentState)) {
+                return i + 1;
+            }
         }
-        if (this.acceptingStates.includes(currentState)) {
-            return accepted;
-        } else {
-            return [];
-        }
+        return null;
     }
 }

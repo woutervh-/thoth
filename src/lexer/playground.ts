@@ -18,50 +18,43 @@ const underscoreAccepter: Accepter<string> = new CharacterAccepter('_');
 const semiColonAccepter: Accepter<string> = new CharacterAccepter(';');
 const letterAccepter: Accepter<string> = new LatinAlphabetAccepter();
 
-const identifier = Builder
-    .alternatives([
+const identifier = Builder.sequence([
+    Builder.alternatives([
         Builder.terminal(underscoreAccepter),
         Builder.terminal(letterAccepter)
-    ])
-    .followedBy(
-        Builder
-            .alternatives([
-                Builder.terminal(underscoreAccepter),
-                Builder.terminal(letterAccepter),
-                Builder.terminal(digitAccepter)
-            ])
-            .zeroOrMore()
-    );
+    ]),
+    Builder
+        .alternatives([
+            Builder.terminal(underscoreAccepter),
+            Builder.terminal(letterAccepter),
+            Builder.terminal(digitAccepter)
+        ])
+        .zeroOrMore()
+]);
 
 const integer = Builder.terminal(digitAccepter).oneOrMore();
 
-const optionalWhitespace = Builder
-    .terminal(whitespaceAccepter)
-    .zeroOrMore();
+const whitespace = Builder.terminal(whitespaceAccepter).oneOrMore();
 
-const statement = identifier
-    .followedBy(optionalWhitespace)
-    .followedBy(Builder.terminal(equalsAccepter))
-    .followedBy(optionalWhitespace)
-    .followedBy(integer)
-    .followedBy(optionalWhitespace)
-    .followedBy(Builder.terminal(plusAccepter))
-    .followedBy(optionalWhitespace)
-    .followedBy(integer)
-    .followedBy(optionalWhitespace)
-    .followedBy(Builder.terminal(semiColonAccepter));
-
-const fsm = statement
+const lexer = Builder
+    .alternatives([
+        whitespace,
+        integer,
+        identifier,
+        Builder.terminal(plusAccepter),
+        Builder.terminal(equalsAccepter),
+        Builder.terminal(semiColonAccepter)
+    ])
     .zeroOrMore()
     .build();
 
-const accepterMachine = Numberfier.convertStateToNumbers(Minimizer.minimize(Deterministic.deterministic(fsm)));
+const accepterMachine = Numberfier.convertStateToNumbers(Minimizer.minimize(Deterministic.deterministic(lexer)));
 const input = 'foo = 123 + 456;';
 const accepterRunner = new AccepterRunner(accepterMachine);
 const run = accepterRunner.run([...input]);
 const info = run.map((accepted) => [accepted.start, accepted.count, accepted.accepter.name]);
 
-console.log(new Dot<number, Accepter<string>>((state) => `S${state}`, (action) => action.name).toDot(accepterMachine));
+console.log(new Dot((state: number) => `S${state}`, (action: Accepter<string>) => action.name).toDot(accepterMachine));
 console.log(JSON.stringify(accepterMachine));
 console.log(input);
 console.log(JSON.stringify(info, null, 2));
