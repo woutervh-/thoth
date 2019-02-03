@@ -27,22 +27,20 @@ export class Dot<S, T> {
 
     public toDot(fsm: FiniteStateMachine<S, T>): string {
         const acceptingStatesWithoutInitial = fsm.acceptingStates.filter((state) => state !== fsm.initialState);
-        const transitionsStringified = fsm.transitions
-            .map<[string, string, string]>(
-                (transition) => [
-                    this.stateToString(transition[0]),
-                    this.actionToString(transition[1]),
-                    this.stateToString(transition[2])]
-            )
-            .map((transition) => `${transition[0]} -> ${transition[2]} [ label = "${transition[1]}" ];`);
-
-        return [
-            ...Dot.dotHeader,
-            `node [style = filled${fsm.acceptingStates.includes(fsm.initialState) ? ', shape = doublecircle' : ''}] ${this.stateToString(fsm.initialState)};`,
-            `node [shape = doublecircle]; ${acceptingStatesWithoutInitial.map(this.stateToString).join(' ')};`,
-            ...Dot.dotMiddle,
-            ...transitionsStringified,
-            ...Dot.dotFooter
-        ].join('\n');
+        const lines: string[] = [];
+        lines.push(...Dot.dotHeader);
+        lines.push(`node [style = filled${fsm.acceptingStates.includes(fsm.initialState) ? ', shape = doublecircle' : ''}] ${this.stateToString(fsm.initialState)};`);
+        if (acceptingStatesWithoutInitial.length >= 1) {
+            lines.push(`node [shape = doublecircle]; ${acceptingStatesWithoutInitial.map(this.stateToString).join(' ')};`);
+        }
+        lines.push(...Dot.dotMiddle);
+        for (const transition of fsm.transitions) {
+            const sourceString = this.stateToString(transition[0]);
+            const actionString = this.actionToString(transition[1]);
+            const targetString = this.stateToString(transition[2]);
+            lines.push(`${sourceString} -> ${targetString} [ label = "${actionString}" ];`);
+        }
+        lines.push(...Dot.dotFooter);
+        return lines.join('\n');
     }
 }
