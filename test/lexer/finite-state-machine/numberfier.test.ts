@@ -1,9 +1,9 @@
 import * as assert from 'assert';
-import { Converter } from '../../../src/lexer/finite-state-machine/converter';
 import { FiniteStateMachine } from '../../../src/lexer/finite-state-machine/finite-state-machine';
+import { Numberfier } from '../../../src/lexer/finite-state-machine/numberfier';
 
-describe('Converter', () => {
-    describe('Converter.convertStateToNumbers', () => {
+describe('Numberfier', () => {
+    describe('Numberfier.convertStateToNumbers', () => {
         it('produces an equivalent state machine with numbers for state #1', () => {
             const fsm: FiniteStateMachine<string, number> = {
                 acceptingStates: ['e'],
@@ -17,7 +17,7 @@ describe('Converter', () => {
                     ['d', 0, 'e']
                 ]
             };
-            const actual = Converter.convertStateToNumbers(fsm);
+            const actual = Numberfier.convertStateToNumbers(fsm);
             const expected: FiniteStateMachine<number, number> = {
                 acceptingStates: [4],
                 initialState: 0,

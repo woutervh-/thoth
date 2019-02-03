@@ -5,9 +5,10 @@ import { DigitAccepter } from './accepters/digit-accepter';
 import { LatinAlphabetAccepter } from './accepters/latin-alphabet-accepter';
 import { WhitespaceAccepter } from './accepters/whitespace-accepter';
 import { Builder } from './finite-state-machine/builder';
-import { Converter } from './finite-state-machine/converter';
 import { Deterministic } from './finite-state-machine/deterministic';
+import { Dot } from './finite-state-machine/dot';
 import { Minimizer } from './finite-state-machine/minimizer';
+import { Numberfier } from './finite-state-machine/numberfier';
 
 const digitAccepter: Accepter<string> = new DigitAccepter();
 const whitespaceAccepter: Accepter<string> = new WhitespaceAccepter();
@@ -54,12 +55,13 @@ const fsm = statement
     .zeroOrMore()
     .build();
 
-const accepterMachine = Minimizer.minimize(Converter.convertStateToNumbers(Deterministic.deterministic(fsm)));
+const accepterMachine = Numberfier.convertStateToNumbers(Minimizer.minimize(Deterministic.deterministic(fsm)));
 const input = 'foo = 123 + 456;';
 const accepterRunner = new AccepterRunner(accepterMachine);
 const run = accepterRunner.run([...input]);
 const info = run.map((accepted) => [accepted.start, accepted.count, accepted.accepter.name]);
 
+console.log(new Dot<number, Accepter<string>>((state) => `S${state}`, (action) => action.name).toDot(accepterMachine));
 console.log(JSON.stringify(accepterMachine));
 console.log(input);
 console.log(JSON.stringify(info, null, 2));

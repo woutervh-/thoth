@@ -1,6 +1,6 @@
 import { FiniteStateMachine } from './finite-state-machine';
 
-export class Converter {
+export class Numberfier {
     public static convertStateToNumbers<S, T>(fsm: FiniteStateMachine<S, T>): FiniteStateMachine<number, T> {
         let counter: number = 0;
         const states: Set<S> = new Set([
