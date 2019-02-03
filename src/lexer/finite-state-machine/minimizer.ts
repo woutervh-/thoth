@@ -15,12 +15,13 @@ export class Minimizer {
         }
 
         const transitionMap: Map<S, Map<T, S>> = new Map();
+        for (const state of reachableStates) {
+            transitionMap.set(state, new Map());
+        }
         for (const transition of fsm.transitions) {
-            if (reachableStates.has(transition[0])) {
-                if (!transitionMap.has(transition[0])) {
-                    transitionMap.set(transition[0], new Map());
-                }
-                transitionMap.get(transition[0])!.set(transition[1], transition[2]);
+            const actionMap = transitionMap.get(transition[0]);
+            if (actionMap !== undefined) {
+                actionMap.set(transition[1], transition[2]);
             }
         }
 
@@ -62,7 +63,7 @@ export class Minimizer {
                                 && partitionTarget === undefined
                                 || target !== undefined
                                 && partitionTarget !== undefined
-                                && partitionsNodeMap.get(target) === partitionsNodeMap.get(partitionTarget)
+                                && partitionsNodeMap.get(target) === partitionsNodeMap.get(partitionTarget);
                         });
                     });
                     if (matchedNewPartition === undefined) {
@@ -90,6 +91,7 @@ export class Minimizer {
             acceptingStates: partitions.filter((partition) => acceptingStates.has(partition[0])),
             initialState: partitionsNodeMap.get(fsm.initialState)!,
             transitions: fsm.transitions
+                .filter((transition) => reachableStates.has(transition[0]))
                 .filter((transition) => partitionsNodeMap.get(transition[0])![0] === transition[0])
                 .map<[S[], T, S[]]>((transition) => [partitionsNodeMap.get(transition[0])!, transition[1], partitionsNodeMap.get(transition[2])!])
         };
