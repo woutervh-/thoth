@@ -22,10 +22,30 @@ class IdentifierTerminal implements Terminal {
     }
 }
 
+interface SequenceProduction {
+    type: 'sequence';
+}
+
+interface AlternativesProduction {
+    type: 'alternatives';
+}
+
+interface TerminalProduction {
+    type: 'terminal';
+}
+
+interface NonTerminalProduction {
+    type: 'non-terminal';
+}
+
+type Production = SequenceProduction
+    | AlternativesProduction
+    | TerminalProduction
+    | NonTerminalProduction;
+
 class Grammar {
-    private symbols: Set<string>;
+    private nonTerminals: Map<string, Production>;
     private terminals: Set<Terminal>;
-    private productions: [string, ];
     private start: string;
 
     constructor(symbols: Set<string>, terminals: Set<Terminal>) {
