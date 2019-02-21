@@ -1,3 +1,6 @@
+import { Builder } from './builder';
+import { PushDownAutomaton } from './pushdown-automaton';
+
 const automaton: PushDownAutomaton<number, string, string> = {
     acceptingStates: [1],
     initialState: 0,
@@ -6,14 +9,6 @@ const automaton: PushDownAutomaton<number, string, string> = {
         [0, 'a', 'A', ['A', 'A'], 0],
         [0, 'b', 'A', [], 1],
         [1, 'b', 'A', [], 1]
-    ]
-};
-
-const automaton2: PushDownAutomaton<number, string, string> = {
-    acceptingStates: [],
-    initialState: 0,
-    transitions: [
-        []
     ]
 };
 
@@ -41,3 +36,15 @@ function run<S, T, U>(automaton: PushDownAutomaton<S, T, U>, input: T[]): boolea
 }
 
 console.log(run(automaton, ['a', 'a', 'b', 'b']));
+
+const pda = Builder
+    .succession(
+        Builder.terminal('a'),
+        Builder.terminal('b')
+    )
+    .build();
+
+console.log(JSON.stringify(pda));
+console.log(run(pda, ['a']));
+console.log(run(pda, ['a', 'b']));
+console.log(run(pda, ['a', 'b', 'c']));
