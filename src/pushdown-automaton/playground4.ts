@@ -46,6 +46,15 @@ const pda = Builder
     )
     .build();
 
+// Builder.named(
+//     'foo',
+//     Builder.succession(
+//         Builder.terminal('a'),
+//         Builder.named('foo'),
+//         Builder.terminal('b')
+//     )
+// )
+
 console.log(JSON.stringify(pda));
 console.log(run(pda, ['a']));
 console.log(run(pda, ['a', 'b']));
