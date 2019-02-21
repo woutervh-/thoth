@@ -17,7 +17,22 @@ interface SuccessionBuilder<T> {
     second: Builder<T>;
 }
 
-type InternalBuilder<T> = EmptyBuilder | TerminalBuilder<T> | SuccessionBuilder<T>;
+interface NamedBuilder {
+    type: 'named';
+    name: string;
+}
+
+interface ReferenceBuilder {
+    type: 'reference';
+    name: string;
+}
+
+type InternalBuilder<T> =
+    EmptyBuilder
+    | TerminalBuilder<T>
+    | SuccessionBuilder<T>
+    | NamedBuilder
+    | ReferenceBuilder;
 
 interface BuildStep<T> {
     acceptingStates: number[];
@@ -118,6 +133,10 @@ export class Builder<T> {
                 return Builder.buildTerminalInternal(internal);
             case 'succession':
                 return Builder.buildSuccessionInternal(internal);
+            case 'named':
+                return Builder.buildNamedInternal(internal);
+            case 'reference':
+                return Builder.buildReferenceInternal(internal);
         }
     }
 
