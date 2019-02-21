@@ -31,6 +31,9 @@ export class AccepterRunner<S, T> {
         let currentState = this.initialState;
         for (let i = 0; i < input.length; i++) {
             const transitions = this.transitionMap.get(currentState)!.filter((transition) => transition[0].accept(input[i]));
+            if (transitions.length >= 2) {
+                throw new Error('The finite state machine is not deterministic.');
+            }
             if (transitions.length !== 1) {
                 return null;
             }
