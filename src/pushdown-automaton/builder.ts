@@ -1,12 +1,126 @@
+// tslint:disable:max-classes-per-file
+
 import { PushDownAutomaton } from './pushdown-automaton';
+
+interface InternalBuilder<T> {
+    getStateCounter(): number;
+    getStackCounter(): number;
+    build(): PushDownAutomaton<number, T, number>;
+}
+
+class EmptyBuilder<T> implements InternalBuilder<T> {
+    public getStackCounter() {
+        return 0;
+    }
+
+    public getStateCounter() {
+        return 1;
+    }
+
+    public build(): PushDownAutomaton<number, T, number> {
+        return {
+            acceptingStates: [0],
+            initialState: 0,
+            transitions: []
+        };
+    }
+}
+
+class TerminalBuilder<T> implements InternalBuilder<T> {
+    private action: T;
+
+    constructor(action: T) {
+        this.action = action;
+    }
+
+    public getStackCounter() {
+        return 0;
+    }
+
+    public getStateCounter() {
+        return 2;
+    }
+
+    public build(): PushDownAutomaton<number, T, number> {
+        return {
+            acceptingStates: [1],
+            initialState: 0,
+            transitions: [
+                [0, this.action, null, [], 1]
+            ]
+        };
+    }
+}
+
+class SuccessionBuilder<T> implements InternalBuilder<T> {
+    private first: InternalBuilder<T>;
+    private second: InternalBuilder<T>;
+
+    constructor(first: InternalBuilder<T>, second: InternalBuilder<T>) {
+        this.first = first;
+        this.second = second;
+    }
+
+    public getStackCounter() {
+        return this.first.getStackCounter() + this.second.getStackCounter();
+    }
+
+    public getStateCounter() {
+        return this.first.getStateCounter() + this.second.getStateCounter();
+    }
+
+    public build(): PushDownAutomaton<number, T, number> {
+        const stackOffset = this.first.getStackCounter();
+        const stateOffset = this.first.getStateCounter();
+        const first = this.first.build();
+        const second = this.second.build();
+        const initialState = first.initialState;
+        const acceptingStates = second.acceptingStates.map((state) => state + stateOffset);
+        if (second.acceptingStates.includes(second.initialState)) {
+            acceptingStates.push(...first.acceptingStates);
+        }
+        const transitions: [number, T, number | null, number[], number][] = [];
+        transitions.push(
+            ...first.transitions
+        );
+        transitions.push(
+            ...second.transitions
+                .map<[number, T, number | null, number[], number]>(
+                    (transition) => [
+                        transition[0] + stateOffset,
+                        transition[1],
+                        transition[2] === null ? null : transition[2] + stackOffset,
+                        transition[3].map((symbol) => symbol + stackOffset),
+                        transition[4] + stateOffset
+                    ]
+                )
+        );
+        for (const acceptingState of first.acceptingStates) {
+            transitions.push(
+                ...second.transitions
+                    .filter((transition) => transition[0] === second.initialState)
+                    .map<[number, T, number | null, number[], number]>(
+                        (transition) => [
+                            acceptingState,
+                            transition[1],
+                            transition[2] === null ? null : transition[2] + stackOffset,
+                            transition[3].map((symbol) => symbol + stackOffset),
+                            transition[4] + stateOffset
+                        ]
+                    )
+            );
+        }
+        return { acceptingStates, initialState, transitions };
+    }
+}
 
 export class Builder<T> {
     public static empty<T>() {
-        return new Builder<T>(1, 0, [0], 0, []);
+        return new EmptyBuilder<T>();
     }
 
     public static terminal<T>(action: T) {
-        return new Builder<T>(2, 0, [1], 0, [[0, action, undefined, [], 1]]);
+        return new TerminalBuilder(action);
     }
 
     // public static many<T>(term: Builder<T>) {
@@ -41,46 +155,8 @@ export class Builder<T> {
     //     return Builder.maybe(Builder.many(term));
     // }
 
-    public static succession<T>(first: Builder<T>, second: Builder<T>) {
-        const stateCounter = first.stateCounter + second.stateCounter;
-        const stackCounter = first.stackCounter + second.stackCounter;
-        const initialState = first.initialState;
-        const acceptingStates = second.acceptingStates.map((state) => state + first.stateCounter);
-        if (second.acceptingStates.includes(second.initialState)) {
-            acceptingStates.push(...first.acceptingStates);
-        }
-        const transitions: [number, T, number | undefined, number[], number][] = [];
-        transitions.push(
-            ...first.transitions
-        );
-        transitions.push(
-            ...second.transitions
-                .map<[number, T, number | undefined, number[], number]>(
-                    (transition) => [
-                        transition[0] + first.stateCounter,
-                        transition[1],
-                        transition[2] === undefined ? undefined : transition[2] + first.stackCounter,
-                        transition[3].map((symbol) => symbol + first.stackCounter),
-                        transition[4] + first.stateCounter
-                    ]
-                )
-        );
-        for (const acceptingState of first.acceptingStates) {
-            transitions.push(
-                ...second.transitions
-                    .filter((transition) => transition[0] === second.initialState)
-                    .map<[number, T, number | undefined, number[], number]>(
-                        (transition) => [
-                            acceptingState,
-                            transition[1],
-                            transition[2] === undefined ? undefined : transition[2] + first.stackCounter,
-                            transition[3].map((symbol) => symbol + first.stackCounter),
-                            transition[4] + first.stateCounter
-                        ]
-                    )
-            );
-        }
-        return new Builder<T>(stateCounter, stackCounter, acceptingStates, initialState, transitions);
+    public static succession<T>(first: InternalBuilder<T>, second: InternalBuilder<T>) {
+        return new SuccessionBuilder(first, second);
     }
 
     // public static sequence<T>(terms: Builder<T>[]) {
@@ -132,19 +208,19 @@ export class Builder<T> {
     //     return terms.reduce((first, second) => Builder.either(first, second));
     // }
 
-    private stateCounter: number;
-    private stackCounter: number;
-    private acceptingStates: number[];
-    private initialState: number;
-    private transitions: [number, T, number | undefined, number[], number][];
+    // private stateCounter: number;
+    // private stackCounter: number;
+    // private acceptingStates: number[];
+    // private initialState: number;
+    // private transitions: [number, T, number | null, number[], number][];
 
-    private constructor(stateCounter: number, stackSymbolCounter: number, acceptingStates: number[], initialState: number, transitions: [number, T, number | undefined, number[], number][]) {
-        this.stateCounter = stateCounter;
-        this.stackCounter = stackSymbolCounter;
-        this.acceptingStates = acceptingStates;
-        this.initialState = initialState;
-        this.transitions = transitions;
-    }
+    // private constructor(stateCounter: number, stackSymbolCounter: number, acceptingStates: number[], initialState: number, transitions: [number, T, number | null, number[], number][]) {
+    //     this.stateCounter = stateCounter;
+    //     this.stackCounter = stackSymbolCounter;
+    //     this.acceptingStates = acceptingStates;
+    //     this.initialState = initialState;
+    //     this.transitions = transitions;
+    // }
 
     // public zeroOrMore(): Builder<T> {
     //     return Builder.any(this);
@@ -170,15 +246,15 @@ export class Builder<T> {
     //     }
     // }
 
-    public followedBy(term: Builder<T>): Builder<T> {
-        return Builder.succession(this, term);
-    }
+    // public followedBy(term: Builder<T>): Builder<T> {
+    //     return Builder.succession(this, term);
+    // }
 
-    public build(): PushDownAutomaton<number, T, number> {
-        return {
-            acceptingStates: this.acceptingStates,
-            initialState: this.initialState,
-            transitions: this.transitions
-        };
-    }
+    // public build(): PushDownAutomaton<number, T, number> {
+    //     return {
+    //         acceptingStates: this.acceptingStates,
+    //         initialState: this.initialState,
+    //         transitions: this.transitions
+    //     };
+    // }
 }

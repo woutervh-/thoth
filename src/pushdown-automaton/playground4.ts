@@ -5,7 +5,7 @@ const automaton: PushDownAutomaton<number, string, string> = {
     acceptingStates: [1],
     initialState: 0,
     transitions: [
-        [0, 'a', undefined, ['A'], 0],
+        [0, 'a', null, ['A'], 0],
         [0, 'a', 'A', ['A', 'A'], 0],
         [0, 'b', 'A', [], 1],
         [1, 'b', 'A', [], 1]
@@ -16,7 +16,9 @@ function run<S, T, U>(automaton: PushDownAutomaton<S, T, U>, input: T[]): boolea
     const stack: U[] = [];
     let currentState = automaton.initialState;
     for (const action of input) {
-        const top = stack.pop();
+        const top = stack.length >= 1
+            ? stack.pop()!
+            : null;
         const transitions = automaton.transitions.filter((transition) =>
             transition[0] === currentState
             && transition[1] === action
