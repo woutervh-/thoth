@@ -84,7 +84,7 @@ export class Builder<T> {
         };
     }
 
-    private static buildSuccessionInternal<T>(internal: SuccessionBuilder<T>, names: Map<string, BuildStep<T>>): BuildStep<T> {
+    private static buildSuccessionInternal<T>(internal: SuccessionBuilder<T>, names: Map<string, InternalBuilder<T>>): BuildStep<T> {
         const first = Builder.buildInternal(internal.first.internal, names);
         const second = Builder.buildInternal(internal.second.internal, names);
         const stackCounter = first.stackCounter + second.stackCounter;
@@ -134,22 +134,28 @@ export class Builder<T> {
         };
     }
 
-    private static buildInternalNamed<T>(internal: NamedBuilder<T>, names: Map<string, BuildStep<T>>): BuildStep<T> {
+    private static buildInternalNamed<T>(internal: NamedBuilder<T>, names: Map<string, InternalBuilder<T>>): BuildStep<T> {
         if (names.has(internal.name)) {
-            throw new Error(`Name ${internal.name} defined twice.`);
+            throw new Error(`Name ${internal.name} defined more than once.`);
         }
-        names.set(internal.name, Builder.buildInternal(internal.builder.internal, names));
-        return names.get(internal.name)!;
+        names.set(internal.name, internal.builder.internal);
+        return Builder.buildInternal(internal.builder.internal, names);
     }
 
-    private static buildInternalReference<T>(internal: ReferenceBuilder, names: Map<string, BuildStep<T>>): BuildStep<T> {
+    private static buildInternalReference<T>(internal: ReferenceBuilder, names: Map<string, InternalBuilder<T>>): BuildStep<T> {
         if (!names.has(internal.name)) {
             throw new Error(`Name ${internal.name} is not defined.`);
         }
-        return names.get(internal.name)!;
+        const builderInternal = names.get(internal.name)!;
+        switch (builderInternal.type) {
+            case 'empty':
+                return Builder.buildEmptyInternal();
+            case 'terminal':
+                return Builder.buildTerminalInternal(builderInternal);
+        }
     }
 
-    private static buildInternal<T>(internal: InternalBuilder<T>, names: Map<string, BuildStep<T>>): BuildStep<T> {
+    private static buildInternal<T>(internal: InternalBuilder<T>, names: Map<string, InternalBuilder<T>>): BuildStep<T> {
         switch (internal.type) {
             case 'empty':
                 return Builder.buildEmptyInternal();
