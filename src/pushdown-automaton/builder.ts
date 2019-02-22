@@ -17,9 +17,10 @@ interface SuccessionBuilder<T> {
     second: Builder<T>;
 }
 
-interface NamedBuilder {
+interface NamedBuilder<T> {
     type: 'named';
     name: string;
+    builder: Builder<T>;
 }
 
 interface ReferenceBuilder {
@@ -31,7 +32,7 @@ type InternalBuilder<T> =
     EmptyBuilder
     | TerminalBuilder<T>
     | SuccessionBuilder<T>
-    | NamedBuilder
+    | NamedBuilder<T>
     | ReferenceBuilder;
 
 interface BuildStep<T> {
@@ -55,6 +56,14 @@ export class Builder<T> {
         return new Builder<T>({ type: 'succession', first, second });
     }
 
+    public static named<T>(name: string, builder: Builder<T>) {
+        return new Builder<T>({ type: 'named', name, builder });
+    }
+
+    public static reference<T>(name: string) {
+        return new Builder<T>({ type: 'reference', name });
+    }
+
     private static buildEmptyInternal<T>(): BuildStep<T> {
         return {
             acceptingStates: [0],
@@ -75,9 +84,9 @@ export class Builder<T> {
         };
     }
 
-    private static buildSuccessionInternal<T>(internal: SuccessionBuilder<T>): BuildStep<T> {
-        const first = Builder.buildInternal(internal.first.internal);
-        const second = Builder.buildInternal(internal.second.internal);
+    private static buildSuccessionInternal<T>(internal: SuccessionBuilder<T>, names: Map<string, BuildStep<T>>): BuildStep<T> {
+        const first = Builder.buildInternal(internal.first.internal, names);
+        const second = Builder.buildInternal(internal.second.internal, names);
         const stackCounter = first.stackCounter + second.stackCounter;
         const stateCounter = first.stateCounter + second.stateCounter;
         const initialState = first.initialState;
@@ -125,18 +134,33 @@ export class Builder<T> {
         };
     }
 
-    private static buildInternal<T>(internal: InternalBuilder<T>): BuildStep<T> {
+    private static buildInternalNamed<T>(internal: NamedBuilder<T>, names: Map<string, BuildStep<T>>): BuildStep<T> {
+        if (names.has(internal.name)) {
+            throw new Error(`Name ${internal.name} defined twice.`);
+        }
+        names.set(internal.name, Builder.buildInternal(internal.builder.internal, names));
+        return names.get(internal.name)!;
+    }
+
+    private static buildInternalReference<T>(internal: ReferenceBuilder, names: Map<string, BuildStep<T>>): BuildStep<T> {
+        if (!names.has(internal.name)) {
+            throw new Error(`Name ${internal.name} is not defined.`);
+        }
+        return names.get(internal.name)!;
+    }
+
+    private static buildInternal<T>(internal: InternalBuilder<T>, names: Map<string, BuildStep<T>>): BuildStep<T> {
         switch (internal.type) {
             case 'empty':
                 return Builder.buildEmptyInternal();
             case 'terminal':
                 return Builder.buildTerminalInternal(internal);
             case 'succession':
-                return Builder.buildSuccessionInternal(internal);
+                return Builder.buildSuccessionInternal(internal, names);
             case 'named':
-                return Builder.buildNamedInternal(internal);
+                return Builder.buildInternalNamed(internal, names);
             case 'reference':
-                return Builder.buildReferenceInternal(internal);
+                return Builder.buildInternalReference(internal, names);
         }
     }
 
@@ -147,7 +171,7 @@ export class Builder<T> {
     }
 
     public build(): PushDownAutomaton<number, T, number> {
-        const buildStep = Builder.buildInternal(this.internal);
+        const buildStep = Builder.buildInternal(this.internal, new Map());
         return {
             acceptingStates: buildStep.acceptingStates,
             initialState: buildStep.initialState,
