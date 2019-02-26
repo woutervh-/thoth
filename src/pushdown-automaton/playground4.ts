@@ -50,32 +50,52 @@ function printGrammar<T>(grammar: Map<string, Term<T>[][]>) {
 }
 
 const grammar: Map<string, Term<string>[][]> = new Map();
+// grammar.set(
+//     'A',
+//     [
+//         [{ type: 'non-terminal', name: 'A' }, { type: 'terminal', terminal: '0' }],
+//         [{ type: 'non-terminal', name: 'B' }, { type: 'terminal', terminal: '1' }],
+//         [{ type: 'terminal', terminal: '2' }]
+//     ]
+// );
+// grammar.set(
+//     'B',
+//     [
+//         [{ type: 'non-terminal', name: 'A' }, { type: 'terminal', terminal: '0' }],
+//         [{ type: 'non-terminal', name: 'B' }, { type: 'terminal', terminal: '1' }]
+//     ]
+// );
 grammar.set(
     'A',
     [
-        [{ type: 'non-terminal', name: 'A' }, { type: 'terminal', terminal: '0' }],
-        [{ type: 'non-terminal', name: 'B' }, { type: 'terminal', terminal: '1' }],
-        [{ type: 'terminal', terminal: '2' }]
+        [{ type: 'non-terminal', name: 'C' }, { type: 'terminal', terminal: 'd' }]
     ]
 );
 grammar.set(
     'B',
     [
-        [{ type: 'non-terminal', name: 'A' }, { type: 'terminal', terminal: '0' }],
-        [{ type: 'non-terminal', name: 'B' }, { type: 'terminal', terminal: '1' }]
+        [{ type: 'non-terminal', name: 'C' }, { type: 'terminal', terminal: 'e' }]
+    ]
+);
+grammar.set(
+    'C',
+    [
+        [{ type: 'non-terminal', name: 'A' }],
+        [{ type: 'non-terminal', name: 'B' }],
+        [{ type: 'terminal', terminal: 'f' }]
     ]
 );
 
 printGrammar(grammar);
 
-// Get rid of A -> ∅ and A -> A type rules.
+// Get rid of A -> A type rules.
 for (const [nonTerminal, sequences] of grammar.entries()) {
-    grammar.set(nonTerminal, sequences.filter((sequence) => sequence.length >= 2 || !sequenceStartsWithNonTerminal(sequence, nonTerminal)));
+    grammar.set(nonTerminal, sequences.filter((sequence) => sequence.length !== 1 || !sequenceStartsWithNonTerminal(sequence, nonTerminal)));
 }
 
-{
-    const orderedNonTerminals = [...grammar.keys()];
+const orderedNonTerminals = [...grammar.keys()];
 
+{
     for (let i = 0; i < orderedNonTerminals.length; i++) {
         const oldSequencesA = grammar.get(orderedNonTerminals[i])!;
         const newSequencesA = new Set(oldSequencesA);
@@ -92,9 +112,25 @@ for (const [nonTerminal, sequences] of grammar.entries()) {
             }
         }
 
-        const [sequencesA, sequencesB] = removeDirectLeftRecursion(orderedNonTerminals[i], `${orderedNonTerminals[i]}'`, [...newSequencesA]);
+        const newNonTerminal = `${orderedNonTerminals[i]}'`;
+        const [sequencesA, sequencesB] = removeDirectLeftRecursion(orderedNonTerminals[i], newNonTerminal, [...newSequencesA]);
         grammar.set(orderedNonTerminals[i], sequencesA);
-        grammar.set(`${orderedNonTerminals[i]}'`, sequencesB);
+        grammar.set(newNonTerminal, sequencesB);
+    }
+}
+
+{
+    for (const nonTerminal of orderedNonTerminals) {
+        let commonPrefix = true;
+        while (commonPrefix) {
+            commonPrefix = false;
+            const sequences = grammar.get(nonTerminal)!;
+            for (let i = 0; i < sequences.length; i++) {
+                for (let j = 0; j < i; j++) {
+                    const left = sequences[i];
+                }
+            }
+        }
     }
 }
 
