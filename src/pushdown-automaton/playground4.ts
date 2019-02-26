@@ -12,39 +12,6 @@ interface Terminal<T> {
 
 type Term<T> = NonTerminalReference | Terminal<T>;
 
-interface Rule<T> {
-    nonTerminal: string;
-    sequence: Term<T>[];
-}
-
-let grammar: Rule<string>[] = [
-    {
-        nonTerminal: 'A',
-        sequence: [{ type: 'non-terminal', name: 'A' }, { type: 'terminal', terminal: '0' }]
-    },
-    {
-        nonTerminal: 'A',
-        sequence: [{ type: 'non-terminal', name: 'B' }, { type: 'terminal', terminal: '1' }]
-    },
-    {
-        nonTerminal: 'B',
-        sequence: [{ type: 'non-terminal', name: 'A' }, { type: 'terminal', terminal: '0' }]
-    },
-    {
-        nonTerminal: 'B',
-        sequence: [{ type: 'non-terminal', name: 'B' }, { type: 'terminal', terminal: '1' }]
-    }
-];
-
-// Get rid of A -> A type rules.
-grammar = grammar.filter((rule) => {
-    if (rule.sequence.length === 1) {
-        const term = rule.sequence[0];
-        return term.type === 'non-terminal' && term.name === rule.nonTerminal;
-    }
-    return true;
-});
-
 function sequenceStartsWithNonTerminal<T>(sequence: Term<T>[], nonTerminal: string) {
     if (sequence.length >= 1) {
         const firstTerm = sequence[0];
@@ -53,13 +20,12 @@ function sequenceStartsWithNonTerminal<T>(sequence: Term<T>[], nonTerminal: stri
     return false;
 }
 
-function removeDirectLeftRecursion<T>(nonTerminal: string, sequences: Term<T>[][]): Rule<T>[] {
-    const newNonTerminal = `${nonTerminal}'`;
+function removeDirectLeftRecursion<T>(oldNonTerminal: string, newNonTerminal: string, sequences: Term<T>[][]): [Term<T>[][], Term<T>[][]] {
     const newSequencesA: Term<T>[][] = [];
     const newSequencesB: Term<T>[][] = [];
 
     for (const sequence of sequences) {
-        if (sequenceStartsWithNonTerminal(sequence, nonTerminal)) {
+        if (sequenceStartsWithNonTerminal(sequence, oldNonTerminal)) {
             const [, ...rest] = sequence;
             newSequencesB.push(rest);
             newSequencesB.push([...rest, { type: 'non-terminal', name: newNonTerminal }]);
@@ -70,67 +36,67 @@ function removeDirectLeftRecursion<T>(nonTerminal: string, sequences: Term<T>[][
     }
 
     return [
-        ...newSequencesA.map<Rule<T>>((sequence) => {
-            return {
-                nonTerminal,
-                sequence
-            };
-        }),
-        ...newSequencesB.map<Rule<T>>((sequence) => {
-            return {
-                nonTerminal: newNonTerminal,
-                sequence
-            };
-        })
+        newSequencesA,
+        newSequencesB
     ];
 }
 
-{
-    // Build mapping from non-terminal to alternative sequences.
-    const ruleMap: Map<string, Term<string>[][]> = new Map();
-    for (const rule of grammar) {
-        if (!ruleMap.has(rule.nonTerminal)) {
-            ruleMap.set(rule.nonTerminal, []);
+function printGrammar<T>(grammar: Map<string, Term<T>[][]>) {
+    for (const [nonTerminal, sequences] of grammar.entries()) {
+        for (const sequence of sequences) {
+            console.log(`${nonTerminal} → ${sequence.map((term) => term.type === 'non-terminal' ? term.name : term.terminal).join(',')}`);
         }
-        ruleMap.get(rule.nonTerminal)!.push(rule.sequence);
-    }
-
-    grammar = [];
-    for (const [nonTerminal, rules] of ruleMap.entries()) {
-        grammar.push(...removeDirectLeftRecursion(nonTerminal, rules));
     }
 }
 
+const grammar: Map<string, Term<string>[][]> = new Map();
+grammar.set(
+    'A',
+    [
+        [{ type: 'non-terminal', name: 'A' }, { type: 'terminal', terminal: '0' }],
+        [{ type: 'non-terminal', name: 'B' }, { type: 'terminal', terminal: '1' }],
+        [{ type: 'terminal', terminal: '2' }]
+    ]
+);
+grammar.set(
+    'B',
+    [
+        [{ type: 'non-terminal', name: 'A' }, { type: 'terminal', terminal: '0' }],
+        [{ type: 'non-terminal', name: 'B' }, { type: 'terminal', terminal: '1' }]
+    ]
+);
+
+printGrammar(grammar);
+
+// Get rid of A -> ∅ and A -> A type rules.
+for (const [nonTerminal, sequences] of grammar.entries()) {
+    grammar.set(nonTerminal, sequences.filter((sequence) => sequence.length >= 2 || !sequenceStartsWithNonTerminal(sequence, nonTerminal)));
+}
+
 {
-    // Build mapping from non-terminal to alternative sequences.
-    const ruleMap: Map<string, Term<string>[][]> = new Map();
-    for (const rule of grammar) {
-        if (!ruleMap.has(rule.nonTerminal)) {
-            ruleMap.set(rule.nonTerminal, []);
-        }
-        ruleMap.get(rule.nonTerminal)!.push(rule.sequence);
-    }
+    const orderedNonTerminals = [...grammar.keys()];
 
-    // Build mapping from non-terminal to topological ordering index.
-    const orderingMap: Map<string, number> = new Map(); // TODO: do we need map or is set good enough?
-    const orderingList: string[] = [];
-    for (const rule of grammar) {
-        if (!orderingMap.has(rule.nonTerminal)) {
-            orderingMap.set(rule.nonTerminal, orderingList.length);
-            orderingList.push(rule.nonTerminal);
-        }
-    }
-
-    for (let i = 0; i < orderingList.length; i++) {
-        const rules = ruleMap.get(orderingList[i])!;
+    for (let i = 0; i < orderedNonTerminals.length; i++) {
+        const oldSequencesA = grammar.get(orderedNonTerminals[i])!;
+        const newSequencesA = new Set(oldSequencesA);
         for (let j = 0; j < i; j++) {
-            for (const rule of rules) {
-                if (sequenceStartsWithNonTerminal(rule, orderingList[j])) {
-
+            for (const sequenceA of oldSequencesA) {
+                if (sequenceStartsWithNonTerminal(sequenceA, orderedNonTerminals[j])) {
+                    const [, ...rest] = sequenceA;
+                    newSequencesA.delete(sequenceA);
+                    const sequencesB = grammar.get(orderedNonTerminals[j])!;
+                    for (const sequenceB of sequencesB) {
+                        newSequencesA.add([...sequenceB, ...rest]);
+                    }
                 }
             }
         }
+
+        const [sequencesA, sequencesB] = removeDirectLeftRecursion(orderedNonTerminals[i], `${orderedNonTerminals[i]}'`, [...newSequencesA]);
+        grammar.set(orderedNonTerminals[i], sequencesA);
+        grammar.set(`${orderedNonTerminals[i]}'`, sequencesB);
     }
 }
 
-console.log(JSON.stringify(grammar));
+console.log('---');
+printGrammar(grammar);
