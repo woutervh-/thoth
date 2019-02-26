@@ -86,6 +86,8 @@ grammar.set(
     ]
 );
 
+// TODO: use one single object per terminal/non-terminal? {type:'terminal',terminal:'0'} <- re-use
+
 printGrammar(grammar);
 
 // Get rid of A -> A type rules.
