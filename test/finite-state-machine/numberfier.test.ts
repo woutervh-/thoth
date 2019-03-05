@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { FiniteStateMachine } from '../../../src/lexer/finite-state-machine/finite-state-machine';
-import { Numberfier } from '../../../src/lexer/finite-state-machine/numberfier';
+import { FiniteStateMachine } from '../../src/finite-state-machine/finite-state-machine';
+import { Numberfier } from '../../src/finite-state-machine/numberfier';
 
 describe('Numberfier', () => {
     describe('Numberfier.convertStateToNumbers', () => {

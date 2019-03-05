@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { Deterministic } from '../../../src/lexer/finite-state-machine/deterministic';
-import { FiniteStateMachine } from '../../../src/lexer/finite-state-machine/finite-state-machine';
+import { Deterministic } from '../../src/finite-state-machine/deterministic';
+import { FiniteStateMachine } from '../../src/finite-state-machine/finite-state-machine';
 
 describe('Deterministic', () => {
     describe('Deterministic.deterministic', () => {

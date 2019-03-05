@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { Builder } from '../../../src/lexer/finite-state-machine/builder';
-import { FiniteStateMachine } from '../../../src/lexer/finite-state-machine/finite-state-machine';
+import { Builder } from '../../src/finite-state-machine/builder';
+import { FiniteStateMachine } from '../../src/finite-state-machine/finite-state-machine';
 
 describe('Builder', () => {
     describe('Builder.empty', () => {
