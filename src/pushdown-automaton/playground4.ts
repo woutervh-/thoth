@@ -58,31 +58,10 @@ printGrammar(grammar);
 }
 
 {
-    const orderedNonTerminals = [...grammar.keys()];
-    for (let i = 0; i < orderedNonTerminals.length; i++) {
-        const oldSequencesA = grammar.get(orderedNonTerminals[i])!;
-        const newSequencesA = new Set(oldSequencesA);
-        for (let j = 0; j < i; j++) {
-            for (const sequenceA of oldSequencesA) {
-                if (sequenceStartsWithNonTerminal(sequenceA, orderedNonTerminals[j])) {
-                    const [, ...rest] = sequenceA;
-                    newSequencesA.delete(sequenceA);
-                    const sequencesB = grammar.get(orderedNonTerminals[j])!;
-                    for (const sequenceB of sequencesB) {
-                        newSequencesA.add([...sequenceB, ...rest]);
-                    }
-                }
-            }
-        }
+    
 
-        const newNonTerminal = `${ orderedNonTerminals[i] } '`;
-    const [sequencesA, sequencesB] = removeDirectLeftRecursion(orderedNonTerminals[i], newNonTerminal, [...newSequencesA]);
-    grammar.set(orderedNonTerminals[i], sequencesA);
-    grammar.set(newNonTerminal, sequencesB);
-}
-
-console.log('--- removing left-recursion ---');
-printGrammar(grammar);
+    console.log('--- removing left-recursion ---');
+    printGrammar(grammar);
 }
 
 {
@@ -125,7 +104,7 @@ printGrammar(grammar);
         }
     }
 
-    console.log('--- removing ambiguity (left-factoring) ---');
+    console.log('--- removing undeterminism (left-factoring) ---');
     printGrammar(grammar);
 }
 
@@ -169,14 +148,9 @@ printGrammar(grammar);
             const oldSequences = grammar.get(nonTerminal)!;
             const newSequences: Term<string>[][] = [];
             for (const oldSequence of oldSequences) {
-                const newSequence: Term<string>[] = [];
-                for (const term of oldSequence) {
-                    if (term.type !== 'non-terminal' || grammar.has(term.name)) {
-                        newSequence.push(term);
-                    }
-                }
-                newSequences.push(newSequence);
-                if (oldSequence.length !== newSequence.length) {
+                if (oldSequence.every((term) => term.type !== 'non-terminal' || grammar.has(term.name))) {
+                    newSequences.push(oldSequence);
+                } else {
                     hasChanged = true;
                 }
             }
