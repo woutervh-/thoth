@@ -1,4 +1,5 @@
-export const module = true;
+// import { FiniteStateMachine } from '../finite-state-machine/finite-state-machine';
+export const isModule = true;
 
 interface NonTerminalReference {
     type: 'non-terminal';
@@ -60,7 +61,14 @@ function printGrammar<T>(grammar: Map<string, Term<T>[][]>) {
     //     }
     // }
     for (const [nonTerminal, sequences] of grammar.entries()) {
-        console.log(`${nonTerminal} → ${sequences.map((sequence) => sequence.map((term) => term.type === 'non-terminal' ? term.name : term.terminal).join(',')).join(' | ')}`);
+        const sequencesString = sequences
+            .map(
+                (sequence) => sequence.length >= 1
+                    ? sequence.map((term) => term.type === 'non-terminal' ? term.name : term.terminal).join(',')
+                    : 'ε'
+            )
+            .join(' | ');
+        console.log(`${nonTerminal} → ${sequences.length >= 1 ? sequencesString : '∅'}`);
     }
 }
 
@@ -80,6 +88,12 @@ const grammar: Map<string, Term<string>[][]> = new Map();
 //         [{ type: 'non-terminal', name: 'B' }, { type: 'terminal', terminal: '1' }]
 //     ]
 // );
+grammar.set(
+    'S',
+    [
+        [{ type: 'non-terminal', name: 'S' }, { type: 'terminal', terminal: 'q' }]
+    ]
+);
 grammar.set(
     'A',
     [
@@ -105,13 +119,14 @@ grammar.set(
 
 printGrammar(grammar);
 
-// Get rid of A -> A type rules.
-for (const [nonTerminal, sequences] of grammar.entries()) {
-    grammar.set(nonTerminal, sequences.filter((sequence) => sequence.length !== 1 || !sequenceStartsWithNonTerminal(sequence, nonTerminal)));
-}
+{
+    for (const [nonTerminal, sequences] of grammar.entries()) {
+        grammar.set(nonTerminal, sequences.filter((sequence) => sequence.length !== 1 || !sequenceStartsWithNonTerminal(sequence, nonTerminal)));
+    }
 
-console.log('---');
-printGrammar(grammar);
+    console.log('--- removing A -> A rules ---');
+    printGrammar(grammar);
+}
 
 {
     const orderedNonTerminals = [...grammar.keys()];
@@ -131,15 +146,15 @@ printGrammar(grammar);
             }
         }
 
-        const newNonTerminal = `${orderedNonTerminals[i]}'`;
-        const [sequencesA, sequencesB] = removeDirectLeftRecursion(orderedNonTerminals[i], newNonTerminal, [...newSequencesA]);
-        grammar.set(orderedNonTerminals[i], sequencesA);
-        grammar.set(newNonTerminal, sequencesB);
-    }
+        const newNonTerminal = `${ orderedNonTerminals[i] } '`;
+    const [sequencesA, sequencesB] = removeDirectLeftRecursion(orderedNonTerminals[i], newNonTerminal, [...newSequencesA]);
+    grammar.set(orderedNonTerminals[i], sequencesA);
+    grammar.set(newNonTerminal, sequencesB);
 }
 
-console.log('---');
+console.log('--- removing left-recursion ---');
 printGrammar(grammar);
+}
 
 {
     const nonTerminals = [...grammar.keys()];
@@ -180,11 +195,88 @@ printGrammar(grammar);
             }
         }
     }
+
+    console.log('--- removing ambiguity (left-factoring) ---');
+    printGrammar(grammar);
 }
 
 {
-    // TODO: prune empty rules and empty sequences
+    let hasSubstitutions = true;
+    while (hasSubstitutions) {
+        hasSubstitutions = false;
+        const nonTerminals = [...grammar.keys()];
+        for (const nonTerminal of nonTerminals) {
+            const oldSequences = grammar.get(nonTerminal)!;
+            const newSequences: Term<string>[][] = [];
+            for (const sequence of oldSequences) {
+                if (sequence.length >= 1) {
+                    const [first, ...rest] = sequence;
+                    if (first.type === 'non-terminal') {
+                        for (const nonTerminalSequence of grammar.get(first.name)!) {
+                            newSequences.push([...nonTerminalSequence, ...rest]);
+                        }
+                        hasSubstitutions = true;
+                    } else {
+                        newSequences.push(sequence);
+                    }
+                } else {
+                    newSequences.push(sequence);
+                }
+            }
+            grammar.set(nonTerminal, newSequences);
+        }
+    }
+
+    console.log('--- substituting sequences that start with non-terminal ---');
+    printGrammar(grammar);
 }
 
-console.log('---');
-printGrammar(grammar);
+{
+    let hasChanged = true;
+    while (hasChanged) {
+        hasChanged = false;
+        const nonTerminals = [...grammar.keys()];
+        for (const nonTerminal of nonTerminals) {
+            const oldSequences = grammar.get(nonTerminal)!;
+            const newSequences: Term<string>[][] = [];
+            for (const oldSequence of oldSequences) {
+                const newSequence: Term<string>[] = [];
+                for (const term of oldSequence) {
+                    if (term.type !== 'non-terminal' || grammar.has(term.name)) {
+                        newSequence.push(term);
+                    }
+                }
+                newSequences.push(newSequence);
+                if (oldSequence.length !== newSequence.length) {
+                    hasChanged = true;
+                }
+            }
+            if (newSequences.length >= 1) {
+                grammar.set(nonTerminal, newSequences);
+            } else {
+                grammar.delete(nonTerminal);
+                hasChanged = true;
+            }
+            if (oldSequences.length !== newSequences.length) {
+                hasChanged = true;
+            }
+        }
+    }
+
+    console.log('--- removing empty non-terminals ---');
+    printGrammar(grammar);
+}
+
+// interface PushDownAccepter<T, U> {
+//     input: T | null;
+//     pop: U | null;
+//     push: U[];
+// }
+
+// const startingNonTerminal = 'A';
+
+// const fsm: FiniteStateMachine<string, PushDownAccepter<string, string>> = {
+//     acceptingStates: [],
+//     initialState: startingNonTerminal,
+//     transitions: []
+// };
