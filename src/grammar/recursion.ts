@@ -27,7 +27,7 @@ export class Recursion {
         ];
     }
 
-    public static removeAllLeftRecursion<T>(grammar: Grammar<T>) {
+    public static removeAllLeftRecursion<T>(grammar: Grammar<T>): Grammar<T> {
         const orderedNonTerminals = Object.keys(grammar);
         const newGrammar = { ...grammar };
         for (let i = 0; i < orderedNonTerminals.length; i++) {

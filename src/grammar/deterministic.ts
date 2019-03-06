@@ -2,7 +2,7 @@ import { Grammar, Term } from './grammar';
 import { SequenceUtil } from './sequence-util';
 
 export class Deterministic {
-    public static leftFactor<T>(grammar: Grammar<T>) {
+    public static leftFactor<T>(grammar: Grammar<T>): Grammar<T> {
         const nonTerminals = Object.keys(grammar);
         const newGrammar = { ...grammar };
         for (const nonTerminal of nonTerminals) {

@@ -43,3 +43,32 @@ Printer.printGrammar(grammar);
 grammar = Minimizer.removeUnreachables(grammar, ['A', 'B']);
 console.log('--- remove unreachables ---');
 Printer.printGrammar(grammar);
+
+// interface Tree<T> {
+//     [0]: Tree<T> | T | undefined;
+//     [1]: Tree<T> | T | undefined;
+// }
+
+function acceptNonTerminal(input: string[], inputIndex: 0, nonTerminal: string) {
+    const sequences = grammar[nonTerminal];
+    for (const sequence of sequences) {
+        for (const term of sequence) {
+            if (term.type === 'non-terminal') {
+                const count = acceptNonTerminal(input, inputIndex, term.name);
+                if (count >= 1) {
+                    inputIndex += count;
+                } else if (count === 0) {
+                    throw new Error('Parsed 0 input elements.');
+                }
+            } else if (input[inputIndex] === term.terminal) {
+                inputIndex += 1;
+            } else {
+                break;
+            }
+        }
+        return inputIndex;
+    }
+    return -1;
+}
+
+console.log(acceptNonTerminal(['f', 'e', 'd'], 'A'));
