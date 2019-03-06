@@ -27,19 +27,19 @@ export class Recursion {
         ];
     }
 
-    public removeAllLeftRecursion<T>(grammar: Grammar<T>) {
-        const newGrammar = { ...grammar };
+    public static removeAllLeftRecursion<T>(grammar: Grammar<T>) {
         const orderedNonTerminals = Object.keys(grammar);
+        const newGrammar = { ...grammar };
         for (let i = 0; i < orderedNonTerminals.length; i++) {
             const oldNonTerminal = orderedNonTerminals[i];
-            const oldSequencesA = grammar[oldNonTerminal]!;
+            const oldSequencesA = newGrammar[oldNonTerminal]!;
             const newSequencesA = new Set(oldSequencesA);
             for (let j = 0; j < i; j++) {
                 for (const sequenceA of oldSequencesA) {
                     if (SequenceUtil.sequenceStartsWithNonTerminal(sequenceA, orderedNonTerminals[j])) {
                         const [, ...rest] = sequenceA;
                         newSequencesA.delete(sequenceA);
-                        const sequencesB = grammar[orderedNonTerminals[j]]!;
+                        const sequencesB = newGrammar[orderedNonTerminals[j]]!;
                         for (const sequenceB of sequencesB) {
                             newSequencesA.add([...sequenceB, ...rest]);
                         }
