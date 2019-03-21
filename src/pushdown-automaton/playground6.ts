@@ -1,4 +1,4 @@
-import { Deterministic } from '../grammar/deterministic';
+// import { Deterministic } from '../grammar/deterministic';
 import { Grammar } from '../grammar/grammar';
 import { Minimizer } from '../grammar/minimizer';
 import { Printer } from '../grammar/printer';
@@ -28,9 +28,9 @@ grammar = Recursion.removeAllLeftRecursion(grammar);
 console.log('--- removed left-recursion ---');
 Printer.printGrammar(grammar);
 
-grammar = Deterministic.leftFactor(grammar);
-console.log('--- left-factored ---');
-Printer.printGrammar(grammar);
+// grammar = Deterministic.leftFactor(grammar);
+// console.log('--- left-factored ---');
+// Printer.printGrammar(grammar);
 
 grammar = Minimizer.removeEmptyRules(grammar);
 console.log('--- remove empty non-terminals ---');
