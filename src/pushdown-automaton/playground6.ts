@@ -52,23 +52,35 @@ Printer.printGrammar(grammar);
 function acceptNonTerminal(input: string[], inputIndex: 0, nonTerminal: string) {
     const sequences = grammar[nonTerminal];
     for (const sequence of sequences) {
+        let accepted = 0;
+        let index = inputIndex;
         for (const term of sequence) {
-            if (term.type === 'non-terminal') {
-                const count = acceptNonTerminal(input, inputIndex, term.name);
-                if (count >= 1) {
-                    inputIndex += count;
-                } else if (count === 0) {
-                    throw new Error('Parsed 0 input elements.');
+            if (term.type === 'terminal') {
+                if (input[index] === term.terminal) {
+                    accepted += 1;
+                    index += 1;
+                } else {
+                    accepted = 0;
+                    index = inputIndex;
+                    break;
                 }
-            } else if (input[inputIndex] === term.terminal) {
-                inputIndex += 1;
             } else {
-                break;
+                const advanced = acceptNonTerminal(input, index, term.name);
+                if (advanced >= 0) {
+                    accepted += advanced;
+                    index += advanced;
+                } else {
+                    accepted = 0;
+                    index = inputIndex;
+                    break;
+                }
             }
         }
-        return inputIndex;
+        if (accepted >= 1) {
+            return accepted;
+        }
     }
     return -1;
 }
 
-console.log(acceptNonTerminal(['f', 'e', 'd'], 'A'));
+console.log(acceptNonTerminal(['f', 'e', 'd'], 0, 'A'));
