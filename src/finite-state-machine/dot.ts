@@ -29,9 +29,9 @@ export class Dot<S, T> {
         const acceptingStatesWithoutInitial = fsm.acceptingStates.filter((state) => state !== fsm.initialState);
         const lines: string[] = [];
         lines.push(...Dot.dotHeader);
-        lines.push(`node [style = filled${fsm.acceptingStates.includes(fsm.initialState) ? ', shape = doublecircle' : ''}] ${this.stateToString(fsm.initialState)};`);
+        lines.push(`node [style = filled${fsm.acceptingStates.includes(fsm.initialState) ? ', shape = doublecircle' : ', shape = circle'}] ${this.stateToString(fsm.initialState)};`);
         if (acceptingStatesWithoutInitial.length >= 1) {
-            lines.push(`node [shape = doublecircle]; ${acceptingStatesWithoutInitial.map(this.stateToString).join(' ')};`);
+            lines.push(`node [shape = doublecircle, style = solid]; ${acceptingStatesWithoutInitial.map(this.stateToString).join(' ')};`);
         }
         lines.push(...Dot.dotMiddle);
         for (const transition of fsm.transitions) {

@@ -96,4 +96,37 @@ export class Minimizer {
                 .map<[S[], T, S[]]>((transition) => [partitionsNodeMap.get(transition[0])!, transition[1], partitionsNodeMap.get(transition[2])!])
         };
     }
+
+    public static removeDeadlocks<S, T>(fsm: FiniteStateMachine<S, T>): FiniteStateMachine<S, T> {
+        const states = new Set<S>([fsm.initialState, ...fsm.acceptingStates]);
+        for (const transition of fsm.transitions) {
+            states.add(transition[0]);
+            states.add(transition[2]);
+        }
+        const reverseReachabilityMap: Map<S, Set<S>> = new Map();
+        for (const state of states) {
+            reverseReachabilityMap.set(state, new Set());
+        }
+        for (const transition of fsm.transitions) {
+            reverseReachabilityMap.get(transition[2])!.add(transition[0]);
+        }
+        const reverseReachableStates = new Set<S>(fsm.acceptingStates);
+        const queue = [...fsm.acceptingStates];
+        while (queue.length >= 1) {
+            const targetState = queue.pop()!;
+            for (const sourceState of reverseReachabilityMap.get(targetState)!) {
+                if (!reverseReachableStates.has(sourceState)) {
+                    reverseReachableStates.add(sourceState);
+                    queue.push(sourceState);
+                }
+            }
+        }
+
+        return {
+            acceptingStates: fsm.acceptingStates,
+            initialState: fsm.initialState,
+            transitions: fsm.transitions
+                .filter((transition) => reverseReachableStates.has(transition[0]) && reverseReachableStates.has(transition[2]))
+        };
+    }
 }

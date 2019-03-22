@@ -3,6 +3,27 @@ import { FiniteStateMachine } from '../../src/finite-state-machine/finite-state-
 import { Minimizer } from '../../src/finite-state-machine/minimizer';
 
 describe('Minimizer', () => {
+    describe('Minimizer.removeDeadlocks', () => {
+        it('removes transitions that lead to a state which cannot reach a terminating state', () => {
+            const fsm: FiniteStateMachine<number, string> = {
+                acceptingStates: [1],
+                initialState: 0,
+                transitions: [
+                    [0, 'x', 1], [0, 'y', 2]
+                ]
+            };
+            const actual = Minimizer.removeDeadlocks(fsm);
+            const expected: FiniteStateMachine<number, string> = {
+                acceptingStates: [1],
+                initialState: 0,
+                transitions: [
+                    [0, 'x', 1]
+                ]
+            };
+            assert.deepStrictEqual(actual, expected);
+        });
+    });
+
     describe('Minimizer.minimize', () => {
         it('does not change a finite state machine that is already minimal #1', () => {
             const fsm: FiniteStateMachine<number, string> = {
