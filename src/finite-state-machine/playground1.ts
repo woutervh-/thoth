@@ -20,40 +20,58 @@ interface Token<T> {
 
 class Lexer<T> {
     private position: number = 0;
-    private longestAcceptingLength: number = 0;
+    private currentTokenContent: T[] = [];
+    private longestTokenLength: number = 0;
     private longestAcceptingToken: Token<T> | null = null;
     private tokens: Token<T>[];
+    private tokenStates: Map<Token<T>, 'pending' | 'rejected'>;
 
     constructor(tokens: Token<T>[]) {
         this.tokens = tokens;
+        this.tokenStates = new Map();
+        for (const token of tokens) {
+            this.tokenStates.set(token, 'pending');
+        }
     }
 
     public write(input: T) {
-        for (const token of this.tokens) {
-            token.accepter.consume(input);
-        }
-        
-        const acceptingToken = this.tokens.find((token) => token.accepter.canConsume(input));
-        if (acceptingToken) {
-
-            this.longestAcceptingLength += 1;
-            this.longestAcceptingToken = acceptingToken;
+        this.currentTokenContent.push(input);
+        const pendingTokens = this.tokens.filter((token) => this.tokenStates.get(token) === 'pending');
+        if (pendingTokens.length >= 1) {
+            for (const token of pendingTokens) {
+                if (token.accepter.isValidNextInput(input)) {
+                    token.accepter.consumeNextInput(input);
+                } else {
+                    this.tokenStates.set(token, 'rejected');
+                }
+            }
+            const acceptingToken = pendingTokens.find((token) => token.accepter.isAccepting());
+            if (acceptingToken !== undefined) {
+                this.longestTokenLength = this.currentTokenContent.length;
+                this.longestAcceptingToken = acceptingToken;
+            }
         } else {
             if (this.longestAcceptingToken === null) {
-                throw new Error('No token can accept this input.');
+                throw new Error('Invalid input.');
             }
-            console.log(`${this.longestAcceptingToken.name} at ${this.position} for ${this.longestAcceptingLength}`);
-            this.position += this.longestAcceptingLength;
-            this.longestAcceptingLength = 0;
+            // Reset and log the longest accepting token.
+            // Rewind rejected input.
+            console.log(`${this.longestAcceptingToken.name} accepted ${this.longestTokenLength} inputs at ${this.position}`);
+            if (this.longestTokenLength < this.currentTokenContent.length) {
+                // We did some lookahead.
+                // We should rewind and replay the remaining tokens.
+                const remainingTokens = this.currentTokenContent.slice(this.longestTokenLength);
+            }
+            this.position += this.longestTokenLength;
+            this.currentTokenContent = [];
+            this.longestTokenLength = 0;
             this.longestAcceptingToken = null;
-            for (const runner of this.accepters.values()) {
-                runner.reset();
+            for (const token of this.tokens) {
+                this.tokenStates.set(token, 'pending');
             }
         }
     }
 }
-
-
 
 const tokens = [ifBuilder, identifierBuilder, semicolon]
     .map<Token<number, string>>((builder) => {

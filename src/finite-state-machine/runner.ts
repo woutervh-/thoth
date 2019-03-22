@@ -1,6 +1,7 @@
+import { Accepter } from './accepter';
 import { FiniteStateMachine } from './finite-state-machine';
 
-export class Runner<S, T> {
+export class FiniteStateMachineAccepter<S, T> implements Accepter<T> {
     private initialState: S;
     private acceptingStates: Set<S>;
     private transitionMap: Map<S, Map<T, S>>;
@@ -20,31 +21,5 @@ export class Runner<S, T> {
             this.transitionMap.get(transition[0])!.set(transition[1], transition[2]);
         }
         this.currentState = this.initialState;
-    }
-
-    public reset() {
-        this.currentState = this.initialState;
-    }
-
-    public accepts(input: T) {
-        if (this.currentState === undefined) {
-            return false;
-        } else {
-            return this.transitionMap.get(this.currentState)!.has(input);
-        }
-    }
-
-    public accept(input: T) {
-        if (this.currentState !== undefined) {
-            this.currentState = this.transitionMap.get(this.currentState)!.get(input);
-        }
-    }
-
-    public isAcceptingState() {
-        if (this.currentState === undefined) {
-            return false;
-        } else {
-            return this.acceptingStates.has(this.currentState);
-        }
     }
 }
