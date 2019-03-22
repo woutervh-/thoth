@@ -1,10 +1,10 @@
 import { Accepter } from './accepter';
 import { Builder } from './builder';
-import { Deterministic } from './deterministic';
-import { Dot } from './dot';
-import { Minimizer } from './minimizer';
-import { Numberfier } from './numberfier';
-import { Runner } from './runner';
+// import { Deterministic } from './deterministic';
+// import { Dot } from './dot';
+// import { Minimizer } from './minimizer';
+// import { Numberfier } from './numberfier';
+import { FiniteStateMachineAccepter } from './finite-state-machine-accepter';
 
 const letterI = Builder.terminal('i');
 const letterF = Builder.terminal('f');
@@ -23,12 +23,12 @@ class Lexer<T> {
     private currentTokenContent: T[] = [];
     private longestTokenLength: number = 0;
     private longestAcceptingToken: Token<T> | null = null;
-    private tokens: Token<T>[];
     private tokenStates: Map<Token<T>, 'pending' | 'rejected'>;
+    private tokens: Token<T>[];
 
     constructor(tokens: Token<T>[]) {
-        this.tokens = tokens;
         this.tokenStates = new Map();
+        this.tokens = tokens;
         for (const token of tokens) {
             this.tokenStates.set(token, 'pending');
         }
@@ -45,7 +45,9 @@ class Lexer<T> {
                     this.tokenStates.set(token, 'rejected');
                 }
             }
-            const acceptingToken = pendingTokens.find((token) => token.accepter.isAccepting());
+            const acceptingToken = this.tokens
+                .filter((token) => this.tokenStates.get(token) === 'pending')
+                .find((token) => token.accepter.isAccepting());
             if (acceptingToken !== undefined) {
                 this.longestTokenLength = this.currentTokenContent.length;
                 this.longestAcceptingToken = acceptingToken;
@@ -57,33 +59,50 @@ class Lexer<T> {
             // Reset and log the longest accepting token.
             // Rewind rejected input.
             console.log(`${this.longestAcceptingToken.name} accepted ${this.longestTokenLength} inputs at ${this.position}`);
-            if (this.longestTokenLength < this.currentTokenContent.length) {
-                // We did some lookahead.
-                // We should rewind and replay the remaining tokens.
-                const remainingTokens = this.currentTokenContent.slice(this.longestTokenLength);
-            }
+            const remainingInput = this.currentTokenContent.slice(this.longestTokenLength);
             this.position += this.longestTokenLength;
             this.currentTokenContent = [];
             this.longestTokenLength = 0;
             this.longestAcceptingToken = null;
             for (const token of this.tokens) {
+                token.accepter.reset();
                 this.tokenStates.set(token, 'pending');
+            }
+            // Rewind and replay the remaining input that was used for lookahead.
+            for (const input of remainingInput) {
+                this.write(input);
             }
         }
     }
 }
 
-const tokens = [ifBuilder, identifierBuilder, semicolon]
-    .map<Token<number, string>>((builder) => {
-        return {
-            fsm: builder.build(),
-            name
-        };
-    });
+const ifToken: Token<string> = {
+    accepter: new FiniteStateMachineAccepter(ifBuilder.build()),
+    name: 'IF'
+};
 
-const lexer = new Lexer(tokens);
+const semicolonToken: Token<string> = {
+    accepter: new FiniteStateMachineAccepter(semicolon.build()),
+    name: 'SEMICOLON'
+};
 
+const identifierToken: Token<string> = {
+    accepter: new FiniteStateMachineAccepter(identifierBuilder.build()),
+    name: 'IDENTIFIER'
+};
 
-const fsm = Numberfier.convertStateToNumbers(Minimizer.removeDeadlocks(Minimizer.minimize(Deterministic.deterministic(tokensBuilder.build()))));
-const dot = new Dot((state: number) => `S${state}`, (action: string) => action).toDot(fsm);
-console.log(dot);
+const lexer = new Lexer([ifToken, identifierToken, semicolonToken]);
+
+lexer.write('i');
+lexer.write(';');
+lexer.write('i');
+lexer.write('f');
+lexer.write(';');
+lexer.write('i');
+lexer.write('f');
+lexer.write('i');
+lexer.write(';');
+
+// const fsm = Numberfier.convertStateToNumbers(Minimizer.removeDeadlocks(Minimizer.minimize(Deterministic.deterministic(tokensBuilder.build()))));
+// const dot = new Dot((state: number) => `S${state}`, (action: string) => action).toDot(fsm);
+// console.log(dot);
