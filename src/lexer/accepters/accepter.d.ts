@@ -1,5 +1,8 @@
 export interface Accepter<T> {
     name: string;
-
-    accept(input: T): boolean;
+    consumeNextInput(input: T): void;
+    isValidNextInput(input: T): boolean;
+    getNextInputAlternatives(): T[];
+    isAccepting(): boolean;
+    reset(): void;
 }

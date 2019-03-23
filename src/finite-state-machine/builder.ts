@@ -1,4 +1,7 @@
 import { FiniteStateMachine } from './finite-state-machine';
+import { Deterministic } from './deterministic';
+import { Minimizer } from './minimizer';
+import { Numberfier } from './numberfier';
 
 export class Builder<T> {
     /**
@@ -217,10 +220,14 @@ export class Builder<T> {
      * Complete the build and return the finite state machine.
      */
     public build(): FiniteStateMachine<number, T> {
-        return {
+        let fsm: FiniteStateMachine<unknown, T> = {
             acceptingStates: this.acceptingStates,
             initialState: this.initialState,
             transitions: this.transitions
         };
+        fsm = Deterministic.deterministic(fsm);
+        fsm = Minimizer.minimize(fsm);
+        fsm = Minimizer.removeDeadlocks(fsm);
+        return Numberfier.convertStateToNumbers(fsm);
     }
 }

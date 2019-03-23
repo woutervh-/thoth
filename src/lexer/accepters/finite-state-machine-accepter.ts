@@ -1,13 +1,15 @@
+import { FiniteStateMachine } from '../../finite-state-machine/finite-state-machine';
 import { Accepter } from './accepter';
-import { FiniteStateMachine } from './finite-state-machine';
 
 export class FiniteStateMachineAccepter<S, T> implements Accepter<T> {
+    public name: string;
     private initialState: S;
     private acceptingStates: Set<S>;
     private transitionMap: Map<S, Map<T, S>>;
     private currentState: S | undefined;
 
-    constructor(fsm: FiniteStateMachine<S, T>) {
+    constructor(name: string, fsm: FiniteStateMachine<S, T>) {
+        this.name = name;
         this.initialState = fsm.initialState;
         this.acceptingStates = new Set(fsm.acceptingStates);
         this.transitionMap = new Map();
