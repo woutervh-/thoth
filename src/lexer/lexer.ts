@@ -72,6 +72,8 @@ export class Lexer<T> extends stream.Transform {
                     position: this.position,
                     type: 'error'
                 };
+                // Skip unmatched input until this point.
+                this.longestTokenLength = this.currentTokenContent.length;
                 this.push(errorToken);
                 this.reset();
             } else {
@@ -87,7 +89,7 @@ export class Lexer<T> extends stream.Transform {
                 this.reset();
                 // Rewind and replay the remaining input that was used for lookahead.
                 for (const input of remainingInput) {
-                    this.write(input);
+                    this.consume(input);
                 }
             }
         }
