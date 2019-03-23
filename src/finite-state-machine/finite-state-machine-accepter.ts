@@ -27,7 +27,11 @@ export class FiniteStateMachineAccepter<S, T> implements Accepter<T> {
         if (this.currentState === undefined) {
             throw new Error('Invalid state.');
         }
-        const nextState = this.transitionMap.get(this.currentState)!.get(input);
+        const transitionMap = this.transitionMap.get(this.currentState);
+        if (transitionMap === undefined) {
+            throw new Error('Invalid input.');
+        }
+        const nextState = transitionMap.get(input);
         if (nextState === undefined) {
             throw new Error('Invalid input.');
         }
@@ -38,7 +42,12 @@ export class FiniteStateMachineAccepter<S, T> implements Accepter<T> {
         if (this.currentState === undefined) {
             return false;
         } else {
-            return this.transitionMap.get(this.currentState)!.has(input);
+            const transitionMap = this.transitionMap.get(this.currentState);
+            if (transitionMap === undefined) {
+                return false;
+            } else {
+                return transitionMap.has(input);
+            }
         }
     }
 
