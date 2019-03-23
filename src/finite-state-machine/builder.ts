@@ -1,5 +1,5 @@
-import { FiniteStateMachine } from './finite-state-machine';
 import { Deterministic } from './deterministic';
+import { FiniteStateMachine } from './finite-state-machine';
 import { Minimizer } from './minimizer';
 import { Numberfier } from './numberfier';
 
