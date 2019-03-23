@@ -27,6 +27,8 @@ lexer.write(':');
 lexer.write('i');
 lexer.write('f');
 lexer.write(';');
+lexer.write('i');
+lexer.write('\n');
 lexer.end();
 
 lexer.on('data', (token: Token<string>) => {

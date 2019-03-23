@@ -29,7 +29,7 @@ export class Lexer<T> extends stream.Transform {
         callback();
     }
 
-    public _flush(callback: stream.TransformCallback) {
+    public _final(callback: stream.TransformCallback) {
         this.consume(undefined);
         callback();
     }
@@ -66,26 +66,27 @@ export class Lexer<T> extends stream.Transform {
             }
         }
         if (input === undefined || pendingAccepters.length <= 0) {
-            if (this.longestAcceptingAccepter === null) {
+            if (input !== undefined && this.longestAcceptingAccepter === null) {
                 const errorToken: ErrorToken<T> = {
                     input,
                     position: this.position,
                     type: 'error'
                 };
+                this.push(errorToken);
                 // Skip unmatched input until this point.
                 this.longestTokenLength = this.currentTokenContent.length;
-                this.push(errorToken);
                 this.reset();
             } else {
-                // Reset and rewind rejected input.
-                const matchedToken: Matchedtoken<T> = {
-                    accepter: this.longestAcceptingAccepter,
-                    inputs: this.currentTokenContent.slice(0, this.longestTokenLength),
-                    position: this.position,
-                    type: 'matched'
-                };
+                if (this.longestAcceptingAccepter !== null) {
+                    const matchedToken: Matchedtoken<T> = {
+                        accepter: this.longestAcceptingAccepter,
+                        inputs: this.currentTokenContent.slice(0, this.longestTokenLength),
+                        position: this.position,
+                        type: 'matched'
+                    };
+                    this.push(matchedToken);
+                }
                 const remainingInput = this.currentTokenContent.slice(this.longestTokenLength);
-                this.push(matchedToken);
                 this.reset();
                 // Rewind and replay the remaining input that was used for lookahead.
                 for (const input of remainingInput) {
