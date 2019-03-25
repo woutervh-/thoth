@@ -11,11 +11,10 @@ interface Terminal<T> {
 type Term<T> = NonTerminal | Terminal<T>;
 
 interface Alternative<T> {
-    associativity: 'left' | 'right' | undefined;
-    precedence: number | undefined;
+    associativity?: 'left' | 'right';
     sequence: Term<T>[];
 }
 
 export interface Grammar<T> {
-    [Key: string]: Term<T>[][];
+    [Key: string]: Alternative<T>[];
 }

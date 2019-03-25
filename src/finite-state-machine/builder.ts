@@ -164,7 +164,7 @@ export class Builder<T> {
     private initialState: number;
     private transitions: [number, T, number][];
 
-    private constructor(stateCounter: number, acceptingStates: number[], initialState: number, transitions: [number, T, number][]) {
+    protected constructor(stateCounter: number, acceptingStates: number[], initialState: number, transitions: [number, T, number][]) {
         this.stateCounter = stateCounter;
         this.acceptingStates = acceptingStates;
         this.initialState = initialState;
@@ -214,6 +214,14 @@ export class Builder<T> {
      */
     public followedBy(term: Builder<T>): Builder<T> {
         return Builder.succession(this, term);
+    }
+
+    /**
+     * Creates a builder for the finite state machine which accepts either the language of this builder's finite state machine or the given builder's finite state machine.
+     * @param term builder whose finite state machine will an alternative to this builder's finite state machine.
+     */
+    public or(term: Builder<T>): Builder<T> {
+        return Builder.either(this, term);
     }
 
     /**

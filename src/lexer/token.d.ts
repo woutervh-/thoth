@@ -13,4 +13,4 @@ interface ErrorToken<T> {
     input: T | undefined;
 }
 
-export type Token<T> = Matchedtoken<T> | ErrorToken<T>;
+export type TokenResult<T> = Matchedtoken<T> | ErrorToken<T>;

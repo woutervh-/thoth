@@ -1,7 +1,7 @@
 import { Builder } from '../finite-state-machine/builder';
 import { FiniteStateMachineAccepter } from './accepters/finite-state-machine-accepter';
 import { Lexer } from './lexer';
-import { Token } from './token';
+import { TokenResult } from './token';
 
 const letterI = Builder.terminal('i');
 const letterF = Builder.terminal('f');
@@ -31,7 +31,7 @@ lexer.write('i');
 lexer.write('\n');
 lexer.end();
 
-lexer.on('data', (token: Token<string>) => {
+lexer.on('data', (token: TokenResult<string>) => {
     console.log(JSON.stringify(token));
 });
 

@@ -5,7 +5,7 @@ import { SingleCharacterFragment } from './accepters/fragments/single-character-
 import { UnicodeRangeFragment } from './accepters/fragments/unicode-range-fragment';
 import { SingleCharacterAccepter } from './accepters/single-character-accepter';
 import { Lexer } from './lexer';
-import { Token } from './token';
+import { TokenResult } from './token';
 
 const leftSquareBracket = new SingleCharacterAccepter('[');
 const rightSquareBracket = new SingleCharacterAccepter(']');
@@ -28,7 +28,7 @@ const equals = new SingleCharacterAccepter('=');
 const upperCaseLatin = new UnicodeRangeFragment('A', 'Z');
 const lowerCaseLatin = new UnicodeRangeFragment('a', 'z');
 const digits = new UnicodeRangeFragment('0', '9');
-const nonAscii = new UnicodeRangeFragment(0x0240, 0xffff);
+const nonAscii = new UnicodeRangeFragment(0x00c0, 0xffff);
 
 const name = new FiniteStateMachineFragmentAccepter(
     'name',
@@ -93,7 +93,7 @@ const lexer = new Lexer([
     numberAccepter
 ]);
 
-lexer.on('data', (token: Token<string>) => {
+lexer.on('data', (token: TokenResult<string>) => {
     if (token.type === 'matched') {
         console.log(token.accepter.name, token.inputs.join(''));
     } else {
@@ -102,7 +102,7 @@ lexer.on('data', (token: Token<string>) => {
 });
 lexer.on('end', () => console.log('end'));
 
-const text = 'π=3.14';
+const text = 'π = 3.14';
 for (const character of text) {
     lexer.write(character);
 }
