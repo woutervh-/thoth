@@ -1,26 +1,24 @@
 import { FiniteStateMachine } from '../../finite-state-machine/finite-state-machine';
 import { Accepter } from './accepter';
+import { Fragment } from './fragments/fragment';
 
-export class FiniteStateMachineAccepter<S, T> implements Accepter<T> {
+export class FiniteStateMachineFragmentAccepter<S, T> implements Accepter<T> {
     public name: string;
     private initialState: S;
     private acceptingStates: Set<S>;
-    private transitionMap: Map<S, Map<T, S>>;
+    private transitionMap: Map<S, [Fragment<T>, S][]>;
     private currentState: S | undefined;
 
-    constructor(name: string, fsm: FiniteStateMachine<S, T>) {
+    constructor(name: string, fsm: FiniteStateMachine<S, Fragment<T>>) {
         this.name = name;
         this.initialState = fsm.initialState;
         this.acceptingStates = new Set(fsm.acceptingStates);
         this.transitionMap = new Map();
         for (const transition of fsm.transitions) {
             if (!this.transitionMap.has(transition[0])) {
-                this.transitionMap.set(transition[0], new Map());
+                this.transitionMap.set(transition[0], []);
             }
-            if (this.transitionMap.get(transition[0])!.has(transition[1])) {
-                throw new Error('Undeterministic transition.');
-            }
-            this.transitionMap.get(transition[0])!.set(transition[1], transition[2]);
+            this.transitionMap.get(transition[0])!.push([transition[1], transition[2]]);
         }
         this.currentState = this.initialState;
     }
@@ -33,11 +31,11 @@ export class FiniteStateMachineAccepter<S, T> implements Accepter<T> {
         if (transitionMap === undefined) {
             throw new Error('Invalid input.');
         }
-        const nextState = transitionMap.get(input);
-        if (nextState === undefined) {
+        const transition = transitionMap.find((transition) => transition[0].accepts(input));
+        if (transition === undefined) {
             throw new Error('Invalid input.');
         }
-        this.currentState = nextState;
+        this.currentState = transition[1];
     }
 
     public isValidNextInput(input: T): boolean {
@@ -48,7 +46,7 @@ export class FiniteStateMachineAccepter<S, T> implements Accepter<T> {
             if (transitionMap === undefined) {
                 return false;
             } else {
-                return transitionMap.has(input);
+                return transitionMap.some((transition) => transition[0].accepts(input));
             }
         }
     }
