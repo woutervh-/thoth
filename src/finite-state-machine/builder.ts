@@ -218,6 +218,7 @@ export class Builder<T> {
 
     /**
      * Complete the build and return the finite state machine.
+     * Before returning, the finite state machine will be made deterministic and minimized.
      */
     public build(): FiniteStateMachine<number, T> {
         let fsm: FiniteStateMachine<unknown, T> = {
