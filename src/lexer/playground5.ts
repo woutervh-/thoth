@@ -1,5 +1,7 @@
 import { Builder } from '../finite-state-machine/builder';
 import { FiniteStateMachineFragmentAccepter } from './accepters/finite-state-machine-fragment-accepter';
+import { Fragment } from './accepters/fragments/fragment';
+import { SingleCharacterFragment } from './accepters/fragments/single-character-fragment';
 import { UnicodeRangeFragment } from './accepters/fragments/unicode-range-fragment';
 import { SingleCharacterAccepter } from './accepters/single-character-accepter';
 import { Lexer } from './lexer';
@@ -27,16 +29,45 @@ const upperCaseLatin = new UnicodeRangeFragment('A', 'Z');
 const lowerCaseLatin = new UnicodeRangeFragment('a', 'z');
 const digits = new UnicodeRangeFragment('0', '9');
 const nonAscii = new UnicodeRangeFragment(0x0240, 0xffff);
+
 const name = new FiniteStateMachineFragmentAccepter(
     'name',
     Builder
-        .alternatives([
-            Builder.terminal(upperCaseLatin),
-            Builder.terminal(lowerCaseLatin),
-            Builder.terminal(digits),
-            Builder.terminal(nonAscii)
+        .sequence([
+            Builder
+                .alternatives([
+                    Builder.terminal(upperCaseLatin),
+                    Builder.terminal(lowerCaseLatin),
+                    Builder.terminal(nonAscii)
+                ]),
+            Builder
+                .alternatives([
+                    Builder.terminal(upperCaseLatin),
+                    Builder.terminal(lowerCaseLatin),
+                    Builder.terminal(digits),
+                    Builder.terminal(nonAscii)
+                ])
+                .zeroOrMore()
         ])
-        .oneOrMore()
+        .build()
+);
+
+const numberAccepter = new FiniteStateMachineFragmentAccepter(
+    'number',
+    Builder
+        .sequence<Fragment<string>>([
+            Builder.alternatives([Builder.terminal(new SingleCharacterFragment('-')), Builder.terminal(new SingleCharacterFragment('+'))]).optional(),
+            Builder.terminal(digits).zeroOrMore(),
+            Builder.terminal(new SingleCharacterFragment('.')).optional(),
+            Builder.terminal(digits).oneOrMore(),
+            Builder
+                .sequence<Fragment<string>>([
+                    Builder.alternatives([Builder.terminal(new SingleCharacterFragment('e')), Builder.terminal(new SingleCharacterFragment('E'))]),
+                    Builder.alternatives([Builder.terminal(new SingleCharacterFragment('-')), Builder.terminal(new SingleCharacterFragment('+'))]).optional(),
+                    Builder.terminal(digits).oneOrMore()
+                ])
+                .optional()
+        ])
         .build()
 );
 
@@ -58,19 +89,20 @@ const lexer = new Lexer([
     circumflex,
     dollar,
     equals,
-    name
+    name,
+    numberAccepter
 ]);
 
 lexer.on('data', (token: Token<string>) => {
     if (token.type === 'matched') {
-        console.log(token.inputs.join(''));
+        console.log(token.accepter.name, token.inputs.join(''));
     } else {
         console.log(JSON.stringify(token));
     }
 });
 lexer.on('end', () => console.log('end'));
 
-const text = 'i+if(-*😐😐😐)';
+const text = 'π=3.14';
 for (const character of text) {
     lexer.write(character);
 }
