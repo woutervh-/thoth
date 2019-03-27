@@ -12,11 +12,11 @@ export class Builder<T> {
     }
 
     /**
-     * Creates a builder for the finite state machine which accepts after a single action.
-     * @param action the action which the finite state machine will accept.
+     * Creates a builder for the finite state machine which accepts after a single input.
+     * @param input the input which the finite state machine will accept.
      */
-    public static terminal<T>(action: T) {
-        return new Builder<T>(2, [1], 0, [[0, action, 1]]);
+    public static terminal<T>(input: T) {
+        return new Builder<T>(2, [1], 0, [[0, input, 1]]);
     }
 
     /**

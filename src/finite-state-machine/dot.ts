@@ -18,11 +18,11 @@ export class Dot<S, T> {
 
     private stateToString: (state: S) => string;
 
-    private actionToString: (action: T) => string;
+    private inputToString: (input: T) => string;
 
-    constructor(stateToString: (state: S) => string, actionToString: (action: T) => string) {
+    constructor(stateToString: (state: S) => string, inputToString: (input: T) => string) {
         this.stateToString = stateToString;
-        this.actionToString = actionToString;
+        this.inputToString = inputToString;
     }
 
     public toDot(fsm: FiniteStateMachine<S, T>): string {
@@ -36,9 +36,9 @@ export class Dot<S, T> {
         lines.push(...Dot.dotMiddle);
         for (const transition of fsm.transitions) {
             const sourceString = this.stateToString(transition[0]);
-            const actionString = this.actionToString(transition[1]);
+            const inputString = this.inputToString(transition[1]);
             const targetString = this.stateToString(transition[2]);
-            lines.push(`${sourceString} -> ${targetString} [ label = "${actionString}" ];`);
+            lines.push(`${sourceString} -> ${targetString} [ label = "${inputString}" ];`);
         }
         lines.push(...Dot.dotFooter);
         return lines.join('\n');

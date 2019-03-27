@@ -78,6 +78,71 @@ const pda: PushDownAutomaton<number, string, string> = {
     ]
 };
 
+interface Rule<T> {
+    type: 'rule';
+    name: string;
+    step: StepBuilder<T>;
+}
+
+interface Reference {
+    type: 'reference';
+    name: string;
+}
+
+interface Terminal<T> {
+    type: 'terminal';
+    input: T;
+}
+
+interface Sequence<T> {
+    type: 'sequence';
+    steps: StepBuilder<T>[];
+}
+
+interface Alternatives<T> {
+    type: 'alternatives';
+    steps: StepBuilder<T>[];
+}
+
+type BuildStep<T> = Terminal<T> | Rule<T> | Sequence<T> | Alternatives<T> | Reference;
+
+// tslit:disable-next-line:max-classes-per-file
+class StepBuilder<T> {
+    public static terminal<T>(input: T) {
+        return new StepBuilder({ type: 'terminal', input });
+    }
+
+    public static reference(name: string) {
+        return new StepBuilder<never>({ type: 'reference', name });
+    }
+
+    public static sequence<T>(steps: StepBuilder<T>[]) {
+        return new StepBuilder({ type: 'sequence', steps });
+    }
+
+    public static alternatives<T>(steps: StepBuilder<T>[]) {
+        return new StepBuilder({ type: 'alternatives', steps });
+    }
+
+    private step: BuildStep<T>;
+
+    constructor(step: BuildStep<T>) {
+        this.step = step;
+    }
+}
+
+class Builder<T> {
+
+}
+
+StepBuilder
+    .rule('S', StepBuilder.sequence([
+        StepBuilder.terminal('a'),
+        StepBuilder.reference('C'),
+        StepBuilder.terminal('b')
+    ]))
+    .rule('C', StepBuilder.terminal('c'));
+
 const fsm = Numberfier.convertStateToNumbers(Minimizer.removeDeadlocks(Minimizer.minimize(Deterministic.deterministic(convertToFiniteStateMachine(pda)))));
 
 const dot = new Dot(

@@ -9,10 +9,10 @@ export class Deterministic {
         const transitions: [Set<S>, T, Set<S>][] = [];
         while (waiting.length >= 1) {
             const stateSet = waiting.pop()!;
-            for (const action of alphabet) {
+            for (const input of alphabet) {
                 const targets = new Set(
                     fsm.transitions
-                        .filter((transition) => stateSet.has(transition[0]) && action === transition[1])
+                        .filter((transition) => stateSet.has(transition[0]) && input === transition[1])
                         .map((transition) => transition[2])
                 );
                 if (targets.size >= 1) {
@@ -26,7 +26,7 @@ export class Deterministic {
                     }
                     transitions.push([
                         stateSet,
-                        action,
+                        input,
                         markedSetMatch === null
                             ? targets
                             : markedSetMatch

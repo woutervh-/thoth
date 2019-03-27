@@ -19,9 +19,9 @@ export class Minimizer {
             transitionMap.set(state, new Map());
         }
         for (const transition of fsm.transitions) {
-            const actionMap = transitionMap.get(transition[0]);
-            if (actionMap !== undefined) {
-                actionMap.set(transition[1], transition[2]);
+            const inputMap = transitionMap.get(transition[0]);
+            if (inputMap !== undefined) {
+                inputMap.set(transition[1], transition[2]);
             }
         }
 
@@ -56,9 +56,9 @@ export class Minimizer {
                 for (const state of oldPartition) {
                     const matchedNewPartition = newPartitionsSplit.find((newPartition) => {
                         const partitionState = newPartition[0];
-                        return alphabet.every((action) => {
-                            const target = transitionMap.get(state)!.get(action);
-                            const partitionTarget = transitionMap.get(partitionState)!.get(action);
+                        return alphabet.every((input) => {
+                            const target = transitionMap.get(state)!.get(input);
+                            const partitionTarget = transitionMap.get(partitionState)!.get(input);
                             return target === undefined
                                 && partitionTarget === undefined
                                 || target !== undefined
