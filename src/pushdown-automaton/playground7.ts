@@ -1,3 +1,4 @@
+import { Builder as FiniteStateMachineBuiler } from '../finite-state-machine/builder';
 import { Deterministic } from '../finite-state-machine/deterministic';
 import { Dot } from '../finite-state-machine/dot';
 import { FiniteStateMachine } from '../finite-state-machine/finite-state-machine';
@@ -81,7 +82,7 @@ const pda: PushDownAutomaton<number, string, string> = {
 interface Rule<T> {
     type: 'rule';
     name: string;
-    step: StepBuilder<T>;
+    step: BuildStep<T>;
 }
 
 interface Reference {
@@ -96,46 +97,61 @@ interface Terminal<T> {
 
 interface Sequence<T> {
     type: 'sequence';
-    steps: StepBuilder<T>[];
+    steps: BuildStep<T>[];
 }
 
 interface Alternatives<T> {
     type: 'alternatives';
-    steps: StepBuilder<T>[];
+    steps: BuildStep<T>[];
 }
 
 type BuildStep<T> = Terminal<T> | Rule<T> | Sequence<T> | Alternatives<T> | Reference;
 
-// tslit:disable-next-line:max-classes-per-file
-class StepBuilder<T> {
-    public static terminal<T>(input: T) {
-        return new StepBuilder({ type: 'terminal', input });
+// tslint:disable-next-line:max-classes-per-file
+class StepBuilder {
+    public static terminal<T>(input: T): Terminal<T> {
+        return { type: 'terminal', input };
     }
 
-    public static reference(name: string) {
-        return new StepBuilder<never>({ type: 'reference', name });
+    public static reference(name: string): Reference {
+        return { type: 'reference', name };
     }
 
-    public static sequence<T>(steps: StepBuilder<T>[]) {
-        return new StepBuilder({ type: 'sequence', steps });
+    public static sequence<T>(steps: BuildStep<T>[]): Sequence<T> {
+        return { type: 'sequence', steps };
     }
 
-    public static alternatives<T>(steps: StepBuilder<T>[]) {
-        return new StepBuilder({ type: 'alternatives', steps });
-    }
-
-    private step: BuildStep<T>;
-
-    constructor(step: BuildStep<T>) {
-        this.step = step;
+    public static alternatives<T>(steps: BuildStep<T>[]): Alternatives<T> {
+        return { type: 'alternatives', steps };
     }
 }
 
+// tslint:disable-next-line:max-classes-per-file
 class Builder<T> {
+    private rules: Map<string, BuildStep<T>> = new Map();
 
+    public rule(name: string, step: BuildStep<T>) {
+        this.rules.set(name, step);
+        return this;
+    }
+
+    public build(startingRule: string) {
+        const buildStep = this.rules.get(startingRule);
+        if (buildStep === undefined) {
+            throw new Error(`Rule ${startingRule} is not defined.`);
+        }
+        if (buildStep.type === 'alternatives') {
+            FiniteStateMachineBuiler.alternatives()
+        }
+    }
 }
 
-StepBuilder
+// TODO: PDA or Recursive Descent??
+// https://www.tutorialspoint.com/automata_theory/pda_context_free_grammar.htm
+// https://en.wikipedia.org/wiki/Chomsky_normal_form
+// https://en.wikipedia.org/wiki/Greibach_normal_form
+
+new Builder<string>()
     .rule('S', StepBuilder.sequence([
         StepBuilder.terminal('a'),
         StepBuilder.reference('C'),
