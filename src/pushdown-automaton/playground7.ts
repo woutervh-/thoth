@@ -1,9 +1,9 @@
+import { Deterministic } from '../finite-state-machine/deterministic';
 import { Dot } from '../finite-state-machine/dot';
 import { FiniteStateMachine } from '../finite-state-machine/finite-state-machine';
-import { PushDownAutomaton } from './pushdown-automaton';
-import { Deterministic } from '../finite-state-machine/deterministic';
 import { Minimizer } from '../finite-state-machine/minimizer';
 import { Numberfier } from '../finite-state-machine/numberfier';
+import { PushDownAutomaton } from './pushdown-automaton';
 
 class Action<T, U> {
     public readonly input: T;
