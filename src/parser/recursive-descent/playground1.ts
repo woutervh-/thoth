@@ -3,7 +3,7 @@ import { RuleBuilder } from './rule-builder';
 import * as Steps from './step';
 import { StepBuilder } from './step-builder';
 
-function parseTerminal<T>(input: T[], position: number, step: Steps.Terminal<T>): Nodes.Node<T> | null {
+function parseTerminal<T>(input: T[], position: number, step: Steps.Terminal<T>): Nodes.PreNode<T> | null {
     if (input[position] === step.input) {
         return {
             span: { start: position, end: position + 1 },
@@ -15,8 +15,8 @@ function parseTerminal<T>(input: T[], position: number, step: Steps.Terminal<T>)
     }
 }
 
-function parseSequence<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Sequence<T>): Nodes.Node<T> | null {
-    const children: Nodes.Node<T>[] = [];
+function parseSequence<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Sequence<T>): Nodes.PreNode<T> | null {
+    const children: Nodes.PreNode<T>[] = [];
     let currentPosition = position;
     for (const sequenceStep of step.steps) {
         const result = parseStep(input, currentPosition, rules, sequenceStep);
@@ -33,7 +33,7 @@ function parseSequence<T>(input: T[], position: number, rules: Map<string, Steps
     };
 }
 
-function parseAlternatives<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Alternatives<T>): Nodes.Node<T> | null {
+function parseAlternatives<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Alternatives<T>): Nodes.PreNode<T> | null {
     for (const alternativeStep of step.steps) {
         const result = parseStep(input, position, rules, alternativeStep);
         if (result !== null) {
@@ -43,7 +43,7 @@ function parseAlternatives<T>(input: T[], position: number, rules: Map<string, S
     return null;
 }
 
-function parseReference<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, name: string): Nodes.Node<T> | null {
+function parseReference<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, name: string): Nodes.PreNode<T> | null {
     const step = rules.get(name);
     if (step === undefined) {
         throw new Error('Rule is not defined.');
@@ -51,8 +51,8 @@ function parseReference<T>(input: T[], position: number, rules: Map<string, Step
     return parseStep(input, position, rules, step);
 }
 
-function parseRepeat<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Repeat<T>): Nodes.Node<T> | null {
-    const children: Nodes.Node<T>[] = [];
+function parseRepeat<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Repeat<T>): Nodes.PreNode<T> | null {
+    const children: Nodes.PreNode<T>[] = [];
     let currentStep = 0;
     let currentPosition = position;
     while (currentStep < step.max) {
@@ -78,7 +78,7 @@ function parseEmpty(position: number): Nodes.Empty | null {
     return { type: 'empty', span: { start: position, end: position } };
 }
 
-function parseStep<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Step<T>): Nodes.Node<T> | null {
+function parseStep<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Step<T>): Nodes.PreNode<T> | null {
     switch (step.type) {
         case 'terminal':
             return parseTerminal(input, position, step);

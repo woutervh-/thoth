@@ -3,7 +3,7 @@ import { RuleBuilder } from './rule-builder';
 import * as Steps from './step';
 import { StepBuilder } from './step-builder';
 
-function parseTerminal<T>(input: T[], position: number, step: Steps.Terminal<T>): Nodes.Node<T> | null {
+function parseTerminal<T>(input: T[], position: number, step: Steps.Terminal<T>): Nodes.PreNode<T> | null {
     if (input[position] === step.input) {
         return {
             span: { start: position, end: position + 1 },
@@ -15,8 +15,8 @@ function parseTerminal<T>(input: T[], position: number, step: Steps.Terminal<T>)
     }
 }
 
-function parseSequence<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Sequence<T>): Nodes.Node<T> | null {
-    const children: Nodes.Node<T>[] = [];
+function parseSequence<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Sequence<T>): Nodes.PreNode<T> | null {
+    const children: Nodes.PreNode<T>[] = [];
     let currentPosition = position;
     for (const sequenceStep of step.steps) {
         const result = parseStep(input, currentPosition, rules, sequenceStep);
@@ -33,7 +33,7 @@ function parseSequence<T>(input: T[], position: number, rules: Map<string, Steps
     };
 }
 
-function parseAlternatives<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Alternatives<T>): Nodes.Node<T> | null {
+function parseAlternatives<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Alternatives<T>): Nodes.PreNode<T> | null {
     for (const alternativeStep of step.steps) {
         const result = parseStep(input, position, rules, alternativeStep);
         if (result !== null) {
@@ -43,7 +43,7 @@ function parseAlternatives<T>(input: T[], position: number, rules: Map<string, S
     return null;
 }
 
-function parseReference<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, name: string): Nodes.Node<T> | null {
+function parseReference<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, name: string): Nodes.PreNode<T> | null {
     const step = rules.get(name);
     if (step === undefined) {
         throw new Error('Rule is not defined.');
@@ -60,8 +60,8 @@ function parseReference<T>(input: T[], position: number, rules: Map<string, Step
     };
 }
 
-function parseRepeat<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Repeat<T>): Nodes.Node<T> | null {
-    const children: Nodes.Node<T>[] = [];
+function parseRepeat<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Repeat<T>): Nodes.PreNode<T> | null {
+    const children: Nodes.PreNode<T>[] = [];
     let currentStep = 0;
     let currentPosition = position;
     while (currentStep < step.max) {
@@ -87,7 +87,7 @@ function parseEmpty(position: number): Nodes.Empty | null {
     return { type: 'empty', span: { start: position, end: position } };
 }
 
-function parseStep<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Step<T>): Nodes.Node<T> | null {
+function parseStep<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Step<T>): Nodes.PreNode<T> | null {
     switch (step.type) {
         case 'terminal':
             return parseTerminal(input, position, step);
@@ -104,15 +104,15 @@ function parseStep<T>(input: T[], position: number, rules: Map<string, Steps.Ste
     }
 }
 
-function postProcess<T>(node: Nodes.Node<T>): Nodes.SequenceNode<T> | Nodes.RuleNode<T> {
+function postProcess1<T>(node: Nodes.PreNode<T>): Nodes.PreNode<T> {
     switch (node.type) {
         case 'empty':
         case 'terminal':
-            return { type: 'sequence', span: node.span, children: [node] };
+            return node;
         case 'rule':
         case 'sequence': {
-            const children = node.children.map(postProcess);
-            const newChildren: Nodes.Node<T>[] = [];
+            const children = node.children.map(postProcess1);
+            const newChildren: Nodes.PreNode<T>[] = [];
             for (const child of children) {
                 if (child.type === 'sequence') {
                     newChildren.push(...child.children);
@@ -125,13 +125,83 @@ function postProcess<T>(node: Nodes.Node<T>): Nodes.SequenceNode<T> | Nodes.Rule
     }
 }
 
-function parse<T>(input: T[], rules: Map<string, Steps.Step<T>>, initialRule: string) {
-    const node = parseReference(input, 0, rules, initialRule);
-    if (node !== null) {
-        return postProcess(node);
+function postProcess2<T>(node: Nodes.PreNode<T>): Nodes.PreNode<T> {
+    if (node.type === 'rule') {
+        const children = node.children.map(postProcess2);
+        const newChildren: Nodes.PreNode<T>[] = [];
+        for (const child of children) {
+            if (child.type === 'rule' && node.name === child.name) {
+                newChildren.push(...child.children);
+            } else {
+                newChildren.push(child);
+            }
+        }
+        return { ...node, children: newChildren };
     } else {
         return node;
     }
+}
+
+function parse<T>(input: T[], rules: Map<string, Steps.Step<T>>, initialRule: string) {
+    return parseReference(input, 0, rules, initialRule);
+}
+
+function makeNameMap<T>(node: Nodes.PreNode<T>) {
+    const nameMap: Map<Nodes.PreNode<T>, string> = new Map();
+    const queue = [node];
+    while (queue.length >= 1) {
+        const node = queue.pop()!;
+        if (node.type === 'rule' || node.type === 'sequence') {
+            queue.push(...node.children);
+        }
+        nameMap.set(node, `t${nameMap.size}`);
+    }
+    return nameMap;
+}
+
+function toDot<T>(node: Nodes.PreNode<T>, terminalToLabel: (terminal: T) => string) {
+    const dotHeader: string[] = [
+        'digraph G {',
+        'ratio = fill;',
+        'node [style=filled];'
+    ];
+
+    const dotFooter: string[] = [
+        '}'
+    ];
+
+    const nameMap = makeNameMap(node);
+    const nodes: string[] = [];
+    const transitions: string[] = [];
+    const queue = [node];
+    while (queue.length >= 1) {
+        const node = queue.pop()!;
+        if (node.type === 'rule' || node.type === 'sequence') {
+            for (const child of node.children) {
+                transitions.push(`${nameMap.get(node)!} -> ${nameMap.get(child)!};`);
+                queue.push(child);
+            }
+        }
+        let label: string;
+        if (node.type === 'rule') {
+            label = node.name;
+        } else if (node.type === 'terminal') {
+            label = terminalToLabel(node.terminal);
+        } else if (node.type === 'empty') {
+            label = 'ε';
+        } else {
+            label = '';
+        }
+        nodes.push(`${nameMap.get(node)!} [label="${label}"];`);
+    }
+
+    const lines = [
+        ...dotHeader,
+        ...transitions,
+        ...nodes,
+        ...dotFooter
+    ];
+    return lines.join('\n');
 }
 
 const integer = StepBuilder.repeat(StepBuilder.alternatives(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => StepBuilder.terminal(digit))), 1);
@@ -151,7 +221,14 @@ const rules = new RuleBuilder<string>()
     .rule('E', expression)
     .build();
 
-const input = '123+456+789;4-(3-2-1);';
+const input = '123+456+789;4-(3*2-1);';
 
 const result = parse(input.split(''), rules, 'S');
+if (result !== null) {
+    if ({} === {}) {
+        postProcess2(postProcess1(result));
+    }
+    console.log(toDot(result, (terminal) => terminal));
+}
+
 console.log(JSON.stringify(result));

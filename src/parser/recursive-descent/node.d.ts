@@ -14,17 +14,26 @@ export interface TerminalNode<T> {
     span: Span;
 }
 
-export interface RuleNode<T> {
+export interface PreRuleNode<T> {
     type: 'rule';
     name: string;
     span: Span;
-    children: Node<T>[];
+    children: PreNode<T>[];
 }
 
 export interface SequenceNode<T> {
     type: 'sequence';
     span: Span;
-    children: Node<T>[];
+    children: PreNode<T>[];
 }
 
-export type Node<T> = TerminalNode<T> | RuleNode<T> | SequenceNode<T> | Empty;
+export type PreNode<T> = TerminalNode<T> | PreRuleNode<T> | SequenceNode<T> | Empty;
+
+export interface PostRuleNode<T> {
+    type: 'rule';
+    name: string;
+    span: Span;
+    children: PostNode<T>[];
+}
+
+export type PostNode<T> = TerminalNode<T> | PreRuleNode<T> | Empty;
