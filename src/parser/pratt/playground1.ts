@@ -44,6 +44,7 @@ const infixOperators: InfixOperator[] = [
 ];
 
 const postfixOperators: PostfixOperator[] = [
+    { type: 'postfix', token: ';', precedence: 0 },
     { type: 'postfix', token: '++', precedence: 80 }
 ];
 
@@ -84,24 +85,28 @@ interface BinaryNode {
 
 type Node = NullaryNode | UnaryNode | BinaryNode;
 
-function getPrecendence(token: string | undefined) {
-    const operator = infixOperators.find((operator) => operator.token === token) || postfixOperators.find((operator) => operator.token === token);
-    if (operator !== undefined) {
-        return operator.precedence;
-    } else {
+function getPrecendence(token: string) {
+    if (bracketOperators.some((operator) => operator.closeToken === token)) {
         return 0;
     }
+    const operator = infixOperators.find((operator) => operator.token === token) || postfixOperators.find((operator) => operator.token === token);
+    if (operator === undefined) {
+        throw new Error(`Unexpected token ${token}.`);
+    }
+    return operator.precedence;
 }
 
 let index = -1;
-const input = ['5', '++', '+', '6'];
+const input = '5+2;3*1;'.split('');
+// const input = ['5', '++', '(', '6'];
 // const input = '2^3^2'.split('');
 // const input = '-(2+3)*5'.split('');
 // const input = '+2++3*-(-4)'.split('');
 
 function parse(precedence: number): Node {
     let token = input[++index];
-    const operator: NullaryOperator | PrefixOperator | BracketOperator | undefined = prefixOperators.find((operator) => operator.token === token)
+    const operator: NullaryOperator | PrefixOperator | BracketOperator | undefined =
+        prefixOperators.find((operator) => operator.token === token)
         || nullaries.find((nullary) => nullary.token === token)
         || bracketOperators.find((operator) => operator.openToken === token);
     if (operator === undefined) {
@@ -118,7 +123,7 @@ function parse(precedence: number): Node {
             throw new Error();
         }
     }
-    while (precedence < getPrecendence(input[index + 1])) {
+    while (index < input.length - 1 && precedence < getPrecendence(input[index + 1])) {
         token = input[++index];
         const operator = infixOperators.find((operator) => operator.token === token) || postfixOperators.find((operator) => operator.token === token);
         if (operator === undefined) {
