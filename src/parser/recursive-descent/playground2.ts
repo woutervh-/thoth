@@ -204,8 +204,8 @@ function toDot<T>(node: Nodes.PreNode<T>, terminalToLabel: (terminal: T) => stri
     return lines.join('\n');
 }
 
-const integer = StepBuilder.repeat(StepBuilder.alternatives(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => StepBuilder.terminal(digit))), 1);
-const operator = StepBuilder.alternatives(['+', '-', '*', '/'].map((operator) => StepBuilder.terminal(operator)));
+const integer = StepBuilder.repeat(StepBuilder.alternatives('0123456789'.split('').map((digit) => StepBuilder.terminal(digit))), 1);
+const operator = StepBuilder.alternatives('+-*/'.split('').map((operator) => StepBuilder.terminal(operator)));
 const semicolon = StepBuilder.terminal(';');
 const leftParenthesis = StepBuilder.terminal('(');
 const rightParenthesis = StepBuilder.terminal(')');

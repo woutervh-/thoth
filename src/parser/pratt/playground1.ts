@@ -36,6 +36,7 @@ const prefixOperators: PrefixOperator[] = [
 ];
 
 const infixOperators: InfixOperator[] = [
+    { type: 'infix', token: ';', precedence: 5, associativity: 'left' },
     { type: 'infix', token: '+', precedence: 10, associativity: 'left' },
     { type: 'infix', token: '-', precedence: 10, associativity: 'left' },
     { type: 'infix', token: '*', precedence: 20, associativity: 'left' },
@@ -44,7 +45,7 @@ const infixOperators: InfixOperator[] = [
 ];
 
 const postfixOperators: PostfixOperator[] = [
-    { type: 'postfix', token: ';', precedence: 0 },
+    { type: 'postfix', token: ';', precedence: 5 },
     { type: 'postfix', token: '++', precedence: 80 }
 ];
 
@@ -125,7 +126,9 @@ function parse(precedence: number): Node {
     }
     while (index < input.length - 1 && precedence < getPrecendence(input[index + 1])) {
         token = input[++index];
-        const operator = infixOperators.find((operator) => operator.token === token) || postfixOperators.find((operator) => operator.token === token);
+        const operator =
+            (index < input.length - 1 ? infixOperators.find((operator) => operator.token === token) : undefined)
+            || postfixOperators.find((operator) => operator.token === token);
         if (operator === undefined) {
             throw new Error();
         }
