@@ -31,11 +31,13 @@ interface NullaryOperator {
 
 type Operator = PrefixOperator | InfixOperator | PostfixOperator | BracketOperator | NullaryOperator;
 
+// A -> a B
 const prefixOperators: PrefixOperator[] = [
     { type: 'prefix', token: '+', precedence: 70 },
     { type: 'prefix', token: '-', precedence: 70 }
 ];
 
+// A -> B (a B)*
 const infixOperators: InfixOperator[] = [
     { type: 'infix', token: '+', precedence: 10, associativity: 'left' },
     { type: 'infix', token: '-', precedence: 10, associativity: 'left' },
@@ -44,15 +46,19 @@ const infixOperators: InfixOperator[] = [
     { type: 'infix', token: '^', precedence: 30, associativity: 'right' }
 ];
 
+// With repeat false: A -> B a
+// With repeat true: A -> (B a)*
 const postfixOperators: PostfixOperator[] = [
     { type: 'postfix', repeat: true, token: ';', precedence: 5 },
     { type: 'postfix', repeat: false, token: '++', precedence: 80 }
 ];
 
+// A -> a B a
 const bracketOperators: BracketOperator[] = [
     { type: 'bracket', openToken: '(', closeToken: ')' }
 ];
 
+// A -> a
 const nullaries: NullaryOperator[] = [
     { type: 'nullary', token: '0' },
     { type: 'nullary', token: '1' },
