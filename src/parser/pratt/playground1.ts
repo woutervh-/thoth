@@ -13,7 +13,12 @@ interface InfixOperator {
 
 interface PostfixOperator {
     type: 'postfix';
-    repeat: boolean;
+    token: string;
+    precedence: number;
+}
+
+interface StatementOperator {
+    type: 'statement';
     token: string;
     precedence: number;
 }
@@ -29,7 +34,7 @@ interface NullaryOperator {
     token: string;
 }
 
-type Operator = PrefixOperator | InfixOperator | PostfixOperator | BracketOperator | NullaryOperator;
+type Operator = PrefixOperator | InfixOperator | PostfixOperator | StatementOperator | BracketOperator | NullaryOperator;
 
 // A -> a B
 const prefixOperators: PrefixOperator[] = [
@@ -46,11 +51,14 @@ const infixOperators: InfixOperator[] = [
     { type: 'infix', token: '^', precedence: 30, associativity: 'right' }
 ];
 
-// With repeat false: A -> B a
-// With repeat true: A -> (B a)*
+// A -> B a
 const postfixOperators: PostfixOperator[] = [
-    { type: 'postfix', repeat: true, token: ';', precedence: 5 },
-    { type: 'postfix', repeat: false, token: '++', precedence: 80 }
+    { type: 'postfix', token: '++', precedence: 80 }
+];
+
+// A -> (B a)*
+const statementOperators: StatementOperator[] = [
+    { type: 'statement', token: ';', precedence: 5 }
 ];
 
 // A -> a B a
@@ -79,13 +87,19 @@ interface NullaryNode {
 
 interface UnaryNode {
     type: 'unary';
-    operator: PrefixOperator | PostfixOperator | BracketOperator;
+    operator: PrefixOperator | PostfixOperator | StatementOperator | BracketOperator;
     child: Node;
+}
+
+interface VariadicNode {
+    type: 'variadic';
+    operators: (InfixOperator | PostfixOperator | StatementOperator)[];
+    values: Node[];
 }
 
 interface BinaryNode {
     type: 'binary';
-    operator: InfixOperator | PostfixOperator;
+    operator: InfixOperator | StatementOperator;
     left: Node;
     right: Node;
 }
@@ -96,7 +110,7 @@ function getPrecendence(token: string) {
     if (bracketOperators.some((operator) => operator.closeToken === token)) {
         return 0;
     }
-    const operator = infixOperators.find((operator) => operator.token === token) || postfixOperators.find((operator) => operator.token === token);
+    const operator = infixOperators.find((operator) => operator.token === token) || postfixOperators.find((operator) => operator.token === token) || statementOperators.find((operator) => operator.token === token);
     if (operator === undefined) {
         throw new Error(`Unexpected token ${token}.`);
     }
@@ -134,69 +148,115 @@ function parse(precedence: number): Node {
         token = input[++index];
         const operator =
             infixOperators.find((operator) => operator.token === token)
-            || postfixOperators.find((operator) => operator.token === token);
+            || postfixOperators.find((operator) => operator.token === token)
+            || statementOperators.find((operator) => operator.token === token);
         if (operator === undefined) {
             throw new Error();
         }
-        if (operator.type === 'infix' || operator.type === 'postfix' && operator.repeat && index < input.length - 1) {
-            const associativity = operator.type === 'infix' && operator.associativity === 'left' ? 0 : -1;
-            node = { type: 'binary', operator, left: node, right: parse(operator.precedence + associativity) };
-        } else {
+        if (operator.type === 'infix' || operator.type === 'statement') {
+            if (index < input.length - 1) {
+                const associativity = operator.type === 'infix' && operator.associativity === 'left' ? 0 : -1;
+                node = { type: 'binary', operator, left: node, right: parse(operator.precedence + associativity) };
+            } else if (operator.type === 'statement') {
+                node = { type: 'unary', operator, child: node };
+            } else {
+                throw new Error();
+            }
+        } else if (operator.type === 'postfix') {
             node = { type: 'unary', operator, child: node };
         }
     }
     return node;
 }
 
-// tslint:disable-next-line:max-classes-per-file
-class Expression {
-    private static getValue(node: Node): number {
-        if (node.type === 'binary') {
-            if (node.operator.token === '*') {
-                return Expression.getValue(node.left) * Expression.getValue(node.right);
-            } else if (node.operator.token === '+') {
-                return Expression.getValue(node.left) + Expression.getValue(node.right);
-            } else {
-                throw new Error();
-            }
-        } else if (node.type === 'nullary') {
-            return parseInt(node.operator.token, 10);
+function toDotNode(node: Node, lines: string[], context: { counter: number }) {
+    if (node.type === 'nullary') {
+        lines.push(`N${context.counter++} [label="${node.operator.token}"]`);
+    } else if (node.type === 'unary') {
+        toDotNode(node.child, lines, context);
+        if (node.operator.type === 'prefix') {
+            lines.push(`N${context.counter++} [label="${node.operator.token}"]`);
+            lines.push(`N${context.counter} -> N${context.counter - 1}`);
+            lines.push(`N${context.counter} -> N${context.counter - 2}`);
+        } else if (node.operator.type === 'postfix' || node.operator.type === 'statement') {
+            lines.push(`N${context.counter++} [label="${node.operator.token}"]`);
+            lines.push(`N${context.counter} -> N${context.counter - 1}`);
+            lines.push(`N${context.counter} -> N${context.counter - 2}`);
         } else {
-            throw new Error();
+            lines.push(`N${context.counter++} [label="${node.operator.openToken}"]`);
+            lines.push(`N${context.counter++} [label="${node.operator.closeToken}"]`);
+            lines.push(`N${context.counter} -> N${context.counter - 1}`);
+            lines.push(`N${context.counter} -> N${context.counter - 2}`);
+            lines.push(`N${context.counter} -> N${context.counter - 3}`);
         }
-    }
-
-    public readonly value: number;
-
-    constructor(node: Node) {
-        this.value = Expression.getValue(node);
+        lines.push(`N${context.counter++} [label=""]`);
+    } else {
+        toDotNode(node.left, lines, context);
+        toDotNode(node.right, lines, context);
+        lines.push(`N${context.counter} -> N${context.counter - 1}`);
+        lines.push(`N${context.counter} -> N${context.counter - 2}`);
+        lines.push(`N${context.counter++} [label="${node.operator.token}"]`);
     }
 }
 
-// tslint:disable-next-line:max-classes-per-file
-class Module {
-    private static getStatements(node: Node): Expression[] {
-        const statements: Expression[] = [];
-        if (node.operator.type === 'postfix' && node.operator.token === ';') {
-            if (node.type === 'unary') {
-                statements.push(...Module.getStatements(node.child));
-            } else if (node.type === 'binary') {
-                statements.push(...Module.getStatements(node.left));
-                statements.push(...Module.getStatements(node.right));
-            }
-        } else {
-            statements.push(new Expression(node));
-        }
-        return statements;
-    }
-
-    public readonly statements: Expression[] = [];
-
-    constructor(node: Node) {
-        this.statements = Module.getStatements(node);
-    }
+function toDot(node: Node) {
+    const lines: string[] = [];
+    lines.push('digraph G {');
+    toDotNode(node, lines, { counter: 0 });
+    lines.push('}');
+    return lines.join('\n');
 }
 
-console.log(new Module(parse(0)));
+// // tslint:disable-next-line:max-classes-per-file
+// class Expression {
+//     private static getValue(node: Node): number {
+//         if (node.type === 'binary') {
+//             if (node.operator.token === '*') {
+//                 return Expression.getValue(node.left) * Expression.getValue(node.right);
+//             } else if (node.operator.token === '+') {
+//                 return Expression.getValue(node.left) + Expression.getValue(node.right);
+//             } else {
+//                 throw new Error();
+//             }
+//         } else if (node.type === 'nullary') {
+//             return parseInt(node.operator.token, 10);
+//         } else {
+//             throw new Error();
+//         }
+//     }
+
+//     public readonly value: number;
+
+//     constructor(node: Node) {
+//         this.value = Expression.getValue(node);
+//     }
+// }
+
+// // tslint:disable-next-line:max-classes-per-file
+// class Module {
+//     private static getStatements(node: Node): Expression[] {
+//         const statements: Expression[] = [];
+//         if (node.operator.type === 'postfix' && node.operator.token === ';') {
+//             if (node.type === 'unary') {
+//                 statements.push(...Module.getStatements(node.child));
+//             } else if (node.type === 'binary') {
+//                 statements.push(...Module.getStatements(node.left));
+//                 statements.push(...Module.getStatements(node.right));
+//             }
+//         } else {
+//             statements.push(new Expression(node));
+//         }
+//         return statements;
+//     }
+
+//     public readonly statements: Expression[] = [];
+
+//     constructor(node: Node) {
+//         this.statements = Module.getStatements(node);
+//     }
+// }
+
+// console.log(parse(0));
 
 // console.log(JSON.stringify(parse(0), null, 2));
+console.log(toDot(parse(0)));
