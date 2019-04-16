@@ -98,7 +98,7 @@ interface UnaryNode {
 interface VariadicNode {
     type: 'variadic';
     operators: (InfixOperator | PostfixOperator | StatementOperator)[];
-    values: Node[];
+    children: Node[];
 }
 
 // interface BinaryNode {
@@ -114,7 +114,9 @@ function getPrecendence(token: string) {
     if (bracketOperators.some((operator) => operator.closeToken === token)) {
         return 0;
     }
-    const operator = infixOperators.find((operator) => operator.token === token) || postfixOperators.find((operator) => operator.token === token) || statementOperators.find((operator) => operator.token === token);
+    const operator = infixOperators.find((operator) => operator.token === token)
+        || postfixOperators.find((operator) => operator.token === token)
+        || statementOperators.find((operator) => operator.token === token);
     if (operator === undefined) {
         throw new Error(`Unexpected token ${token}.`);
     }
@@ -151,31 +153,22 @@ const input = '{a=5+3*2;b=7-1;}'.split('');
 //     }
 // }
 
-function parse(precedence: number): Node | null {
+function parse(precedence: number): Node {
     let token = input[++index];
     const operator: NullaryOperator | PrefixOperator | BracketOperator | undefined =
         prefixOperators.find((operator) => operator.token === token)
         || nullaries.find((nullary) => nullary.token === token)
         || bracketOperators.find((operator) => operator.openToken === token);
     if (operator === undefined) {
-        index -= 1;
-        return null;
+        throw new Error();
     }
     let node: Node;
     if (operator.type === 'prefix') {
-        const child = parse(operator.precedence);
-        if (child === null) {
-            throw new Error();
-        }
-        node = { type: 'unary', operator, child };
+        node = { type: 'unary', operator, child: parse(operator.precedence) };
     } else if (operator.type === 'nullary') {
         node = { type: 'nullary', operator };
     } else {
-        const child = parse(0);
-        if (child === null) {
-            throw new Error();
-        }
-        node = { type: 'unary', operator, child };
+        node = { type: 'unary', operator, child: parse(0) };
         if (input[++index] !== operator.closeToken) {
             throw new Error();
         }
@@ -190,22 +183,19 @@ function parse(precedence: number): Node | null {
             throw new Error();
         }
         if (operator.type === 'infix' || operator.type === 'statement') {
+            if (node.type !== 'variadic') {
+                node = { type: 'variadic', operators: [], children: [node] };
+            }
             if (index < input.length - 1) {
                 const associativity = operator.type === 'infix' && operator.associativity === 'left' ? 0 : -1;
-                const right = parse(operator.precedence + associativity);
-                if (right !== null) {
-                    node = { type: 'binary', operator, left: node, right };
-                } else if (operator.type === 'statement') {
-                    node = { type: 'unary', operator, child: node };
-                } else {
-                    break;
-                }
+                node.operators.push(operator);
+                node.children.push(parse(operator.precedence + associativity));
             } else if (operator.type === 'statement') {
                 node = { type: 'unary', operator, child: node };
             } else {
                 throw new Error();
             }
-        } else if (operator.type === 'postfix') {
+        } else {
             node = { type: 'unary', operator, child: node };
         }
     }
@@ -225,9 +215,8 @@ function toDotNode(node: Node, lines: string[], context: { counter: number }): n
             lines.push(`N${context.counter} -> N${child}`);
         }
     } else {
-        const left = toDotNode(node.left, lines, context);
-        const right = toDotNode(node.right, lines, context);
-        lines.push(`N${context.counter} [label="${node.operator.token}"]`);
+        const children = node.children.map((child) => toDotNode(child, lines, context));
+        lines.push(`N${context.counter} [label="${node.operators.join(' ')}"]`);
         lines.push(`N${context.counter} -> N${left}`);
         lines.push(`N${context.counter} -> N${right}`);
     }
