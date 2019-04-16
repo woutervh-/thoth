@@ -169,39 +169,50 @@ function parse(precedence: number): Node {
     return node;
 }
 
-function toDotNode(node: Node, lines: string[], context: { counter: number }) {
+function toDotNode(node: Node, lines: string[], context: { counter: number }): number {
     if (node.type === 'nullary') {
-        lines.push(`N${context.counter++} [label="${node.operator.token}"]`);
+        lines.push(`N${context.counter} [label="${node.operator.token}"]`);
     } else if (node.type === 'unary') {
-        toDotNode(node.child, lines, context);
+        const child = toDotNode(node.child, lines, context);
         if (node.operator.type === 'prefix') {
-            lines.push(`N${context.counter++} [label="${node.operator.token}"]`);
-            lines.push(`N${context.counter} -> N${context.counter - 1}`);
-            lines.push(`N${context.counter} -> N${context.counter - 2}`);
+            const prefix = context.counter++;
+            lines.push(`N${context.counter} [label=""]`);
+            lines.push(`N${prefix} [label="${node.operator.token}"]`);
+            lines.push(`N${context.counter} -> N${prefix}`);
+            lines.push(`N${context.counter} -> N${child}`);
         } else if (node.operator.type === 'postfix' || node.operator.type === 'statement') {
-            lines.push(`N${context.counter++} [label="${node.operator.token}"]`);
-            lines.push(`N${context.counter} -> N${context.counter - 1}`);
-            lines.push(`N${context.counter} -> N${context.counter - 2}`);
+            const postfix = context.counter++;
+            lines.push(`N${context.counter} [label=""]`);
+            lines.push(`N${postfix} [label="${node.operator.token}"]`);
+            lines.push(`N${context.counter} -> N${child}`);
+            lines.push(`N${context.counter} -> N${postfix}`);
         } else {
-            lines.push(`N${context.counter++} [label="${node.operator.openToken}"]`);
-            lines.push(`N${context.counter++} [label="${node.operator.closeToken}"]`);
-            lines.push(`N${context.counter} -> N${context.counter - 1}`);
-            lines.push(`N${context.counter} -> N${context.counter - 2}`);
-            lines.push(`N${context.counter} -> N${context.counter - 3}`);
+            const open = context.counter++;
+            const close = context.counter++;
+            lines.push(`N${context.counter} [label=""]`);
+            lines.push(`N${open} [label="${node.operator.openToken}"]`);
+            lines.push(`N${close} [label="${node.operator.closeToken}"]`);
+            lines.push(`N${context.counter} -> N${open}`);
+            lines.push(`N${context.counter} -> N${child}`);
+            lines.push(`N${context.counter} -> N${close}`);
         }
-        lines.push(`N${context.counter++} [label=""]`);
     } else {
-        toDotNode(node.left, lines, context);
-        toDotNode(node.right, lines, context);
-        lines.push(`N${context.counter} -> N${context.counter - 1}`);
-        lines.push(`N${context.counter} -> N${context.counter - 2}`);
-        lines.push(`N${context.counter++} [label="${node.operator.token}"]`);
+        const left = toDotNode(node.left, lines, context);
+        const right = toDotNode(node.right, lines, context);
+        const operator = context.counter++;
+        lines.push(`N${context.counter} [label=""]`);
+        lines.push(`N${operator} [label="${node.operator.token}"]`);
+        lines.push(`N${context.counter} -> N${left}`);
+        lines.push(`N${context.counter} -> N${operator}`);
+        lines.push(`N${context.counter} -> N${right}`);
     }
+    return context.counter++;
 }
 
 function toDot(node: Node) {
     const lines: string[] = [];
     lines.push('digraph G {');
+    lines.push('graph [ordering="out"];');
     toDotNode(node, lines, { counter: 0 });
     lines.push('}');
     return lines.join('\n');
