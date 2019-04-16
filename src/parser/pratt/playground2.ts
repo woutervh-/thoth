@@ -101,14 +101,14 @@ interface VariadicNode {
     values: Node[];
 }
 
-interface BinaryNode {
-    type: 'binary';
-    operator: InfixOperator | StatementOperator;
-    left: Node;
-    right: Node;
-}
+// interface BinaryNode {
+//     type: 'binary';
+//     operator: InfixOperator | StatementOperator;
+//     left: Node;
+//     right: Node;
+// }
 
-type Node = NullaryNode | UnaryNode | BinaryNode;
+type Node = NullaryNode | UnaryNode | VariadicNode;
 
 function getPrecendence(token: string) {
     if (bracketOperators.some((operator) => operator.closeToken === token)) {
