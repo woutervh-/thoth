@@ -118,11 +118,33 @@ function getPrecendence(token: string) {
 }
 
 let index = -1;
-const input = '5+2;3*1;'.split('');
+const input = '(-5)+2;3*1;'.split('');
 // const input = ['5', '++', '(', '6'];
 // const input = '2^3^2'.split('');
 // const input = '-(2+3)*5'.split('');
 // const input = '+2++3*-(-4)'.split('');
+
+class TokenStream {
+    private queue: string[] = [];
+    private consumerQueue: { type: 'peek' | 'pop', consume: (token: string) => void }[] = [];
+
+    public push(token: string) {
+        this.queue.push(token);
+        this.flush();
+    }
+
+    public peek(): Promise<string> {
+        this.consumerQueue.push();
+    }
+
+    public async pop(): string | undefined {
+
+    }
+
+    private flush() {
+
+    }
+}
 
 function parse(precedence: number): Node {
     let token = input[++index];
@@ -176,26 +198,24 @@ function toDotNode(node: Node, lines: string[], context: { counter: number }): n
         const child = toDotNode(node.child, lines, context);
         if (node.operator.type === 'prefix') {
             const prefix = context.counter++;
-            lines.push(`N${context.counter} [label=""]`);
             lines.push(`N${prefix} [label="${node.operator.token}"]`);
             lines.push(`N${context.counter} -> N${prefix}`);
             lines.push(`N${context.counter} -> N${child}`);
         } else if (node.operator.type === 'postfix' || node.operator.type === 'statement') {
             const postfix = context.counter++;
-            lines.push(`N${context.counter} [label=""]`);
             lines.push(`N${postfix} [label="${node.operator.token}"]`);
             lines.push(`N${context.counter} -> N${child}`);
             lines.push(`N${context.counter} -> N${postfix}`);
         } else {
             const open = context.counter++;
             const close = context.counter++;
-            lines.push(`N${context.counter} [label=""]`);
             lines.push(`N${open} [label="${node.operator.openToken}"]`);
             lines.push(`N${close} [label="${node.operator.closeToken}"]`);
             lines.push(`N${context.counter} -> N${open}`);
             lines.push(`N${context.counter} -> N${child}`);
             lines.push(`N${context.counter} -> N${close}`);
         }
+        lines.push(`N${context.counter} [label=""]`);
     } else {
         const left = toDotNode(node.left, lines, context);
         const right = toDotNode(node.right, lines, context);
