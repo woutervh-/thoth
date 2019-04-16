@@ -122,7 +122,7 @@ function getPrecendence(token: string) {
 }
 
 let index = -1;
-const input = '{a=5+3*2;b=7-1;}{}'.split('');
+const input = '{a=5+3*2;b=7-1;}'.split('');
 // const input = '(-5)+2;3*1;'.split('');
 // const input = ['5', '++', '(', '6'];
 // const input = '2^3^2'.split('');
@@ -195,6 +195,8 @@ function parse(precedence: number): Node | null {
                 const right = parse(operator.precedence + associativity);
                 if (right !== null) {
                     node = { type: 'binary', operator, left: node, right };
+                } else if (operator.type === 'statement') {
+                    node = { type: 'unary', operator, child: node };
                 } else {
                     break;
                 }
