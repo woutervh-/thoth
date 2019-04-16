@@ -1,5 +1,3 @@
-export const module = true;
-
 interface PrefixOperator {
     type: 'prefix';
     token: string;
@@ -36,26 +34,27 @@ interface NullaryOperator {
     token: string;
 }
 
-// type Operator = PrefixOperator | InfixOperator | PostfixOperator | StatementOperator | BracketOperator | NullaryOperator;
+type Operator = PrefixOperator | InfixOperator | PostfixOperator | StatementOperator | BracketOperator | NullaryOperator;
 
 // A -> a B
 const prefixOperators: PrefixOperator[] = [
-    { type: 'prefix', token: '+', precedence: 70 },
-    { type: 'prefix', token: '-', precedence: 70 }
+    { type: 'prefix', token: '+', precedence: 80 },
+    { type: 'prefix', token: '-', precedence: 80 }
 ];
 
 // A -> B (a B)*
 const infixOperators: InfixOperator[] = [
-    { type: 'infix', token: '+', precedence: 10, associativity: 'left' },
-    { type: 'infix', token: '-', precedence: 10, associativity: 'left' },
-    { type: 'infix', token: '*', precedence: 20, associativity: 'left' },
-    { type: 'infix', token: '/', precedence: 20, associativity: 'left' },
-    { type: 'infix', token: '^', precedence: 30, associativity: 'right' }
+    { type: 'infix', token: '=', precedence: 10, associativity: 'right' },
+    { type: 'infix', token: '+', precedence: 20, associativity: 'left' },
+    { type: 'infix', token: '-', precedence: 20, associativity: 'left' },
+    { type: 'infix', token: '*', precedence: 30, associativity: 'left' },
+    { type: 'infix', token: '/', precedence: 30, associativity: 'left' },
+    { type: 'infix', token: '^', precedence: 40, associativity: 'right' }
 ];
 
 // A -> B a
 const postfixOperators: PostfixOperator[] = [
-    { type: 'postfix', token: '++', precedence: 80 }
+    { type: 'postfix', token: '++', precedence: 90 }
 ];
 
 // A -> (B a)*
@@ -80,7 +79,9 @@ const nullaries: NullaryOperator[] = [
     { type: 'nullary', token: '6' },
     { type: 'nullary', token: '7' },
     { type: 'nullary', token: '8' },
-    { type: 'nullary', token: '9' }
+    { type: 'nullary', token: '9' },
+    { type: 'nullary', token: 'a' },
+    { type: 'nullary', token: 'b' }
 ];
 
 interface NullaryNode {
@@ -94,11 +95,11 @@ interface UnaryNode {
     child: Node;
 }
 
-// interface VariadicNode {
-//     type: 'variadic';
-//     operators: (InfixOperator | PostfixOperator | StatementOperator)[];
-//     values: Node[];
-// }
+interface VariadicNode {
+    type: 'variadic';
+    operators: (InfixOperator | PostfixOperator | StatementOperator)[];
+    values: Node[];
+}
 
 interface BinaryNode {
     type: 'binary';
@@ -121,7 +122,8 @@ function getPrecendence(token: string) {
 }
 
 let index = -1;
-const input = '(-5)+2;3*1;'.split('');
+const input = '{a=5+3*2;b=7-1;}{}'.split('');
+// const input = '(-5)+2;3*1;'.split('');
 // const input = ['5', '++', '(', '6'];
 // const input = '2^3^2'.split('');
 // const input = '-(2+3)*5'.split('');
@@ -149,22 +151,31 @@ const input = '(-5)+2;3*1;'.split('');
 //     }
 // }
 
-function parse(precedence: number): Node {
+function parse(precedence: number): Node | null {
     let token = input[++index];
     const operator: NullaryOperator | PrefixOperator | BracketOperator | undefined =
         prefixOperators.find((operator) => operator.token === token)
         || nullaries.find((nullary) => nullary.token === token)
         || bracketOperators.find((operator) => operator.openToken === token);
     if (operator === undefined) {
-        throw new Error();
+        index -= 1;
+        return null;
     }
     let node: Node;
     if (operator.type === 'prefix') {
-        node = { type: 'unary', operator, child: parse(operator.precedence) };
+        const child = parse(operator.precedence);
+        if (child === null) {
+            throw new Error();
+        }
+        node = { type: 'unary', operator, child };
     } else if (operator.type === 'nullary') {
         node = { type: 'nullary', operator };
     } else {
-        node = { type: 'unary', operator, child: parse(0) };
+        const child = parse(0);
+        if (child === null) {
+            throw new Error();
+        }
+        node = { type: 'unary', operator, child };
         if (input[++index] !== operator.closeToken) {
             throw new Error();
         }
@@ -181,7 +192,12 @@ function parse(precedence: number): Node {
         if (operator.type === 'infix' || operator.type === 'statement') {
             if (index < input.length - 1) {
                 const associativity = operator.type === 'infix' && operator.associativity === 'left' ? 0 : -1;
-                node = { type: 'binary', operator, left: node, right: parse(operator.precedence + associativity) };
+                const right = parse(operator.precedence + associativity);
+                if (right !== null) {
+                    node = { type: 'binary', operator, left: node, right };
+                } else {
+                    break;
+                }
             } else if (operator.type === 'statement') {
                 node = { type: 'unary', operator, child: node };
             } else {
@@ -274,7 +290,12 @@ function toDot(node: Node) {
 //     }
 // }
 
+const node = parse(0);
+if (node === null) {
+    throw new Error();
+}
+
 // console.log(parse(0));
 
 // console.log(JSON.stringify(parse(0), null, 2));
-console.log(toDot(parse(0)));
+console.log(toDot(node));
