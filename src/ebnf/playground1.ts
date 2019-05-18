@@ -78,7 +78,7 @@ const digit: Choice = {
 
 const symbol: Choice = {
     type: 'choice',
-    children: `[]{}()<>'''=|.,;`.split('').map(createTerminal)
+    children: `[]{}()<>'"=|.,;`.split('').map(createTerminal)
 };
 
 const character: Choice = {
@@ -295,122 +295,7 @@ function parse(grammar: Grammar, rule: GrammarSymbol, position: number): number 
     }
 }
 
-function removeIndirectLeftRecursion(grammar: Grammar, rule: GrammarSymbol, nonTerminal: string): GrammarSymbol {
-    switch (rule.type) {
-        case 'choice':
-            return {
-                type: 'choice',
-                children: rule.children.map((child) => removeIndirectLeftRecursion(grammar, child, nonTerminal))
-            };
-        case 'optional':
-            return {
-                type: 'optional',
-                child: removeIndirectLeftRecursion(grammar, rule.child, nonTerminal)
-            };
-        case 'reference':
-            if (rule.name === nonTerminal) {
-                return grammar[rule.name];
-            } else {
-                return rule;
-            }
-        case 'repeat':
-            return {
-                type: 'repeat',
-                child: removeIndirectLeftRecursion(grammar, rule.child, nonTerminal)
-            };
-        case 'sequence':
-            return {
-                type: 'sequence',
-                children: [removeIndirectLeftRecursion(grammar, rule.children[0], nonTerminal), ...rule.children.slice(1)]
-            };
-        case 'terminal':
-            return rule;
-        case 'empty':
-            return rule;
-    }
-}
-
-function isDirectLeftRecursive(rule: GrammarSymbol, nonTerminal: string): boolean {
-    switch (rule.type) {
-        case 'choice':
-            return rule.children.some((child) => isDirectLeftRecursive(child, nonTerminal));
-        case 'optional':
-            return isDirectLeftRecursive(rule.child, nonTerminal);
-        case 'reference':
-            return rule.name === nonTerminal;
-        case 'repeat':
-            return isDirectLeftRecursive(rule.child, nonTerminal);
-        case 'sequence':
-            return isDirectLeftRecursive(rule.children[0], nonTerminal);
-        case 'terminal':
-            return false;
-        case 'empty':
-            return false;
-    }
-}
-
-function removeDirectLeftRecursion(rule: GrammarSymbol, nonTerminal: string): GrammarSymbol {
-    if (!isDirectLeftRecursive(rule, nonTerminal)) {
-        return rule;
-    }
-    if (rule.type === 'choice') {
-        const lChildren = rule.children.filter((child) => isDirectLeftRecursive(child, nonTerminal));
-        const rChildren = rule.children.filter((child) => !isDirectLeftRecursive(child, nonTerminal));
-        if (lChildren.length === 0) {
-            // There is no direct left recursion, return rule as-is.
-            return rule;
-        } else if (rChildren.length === 0) {
-            // All the alternatives are left recursive, will throw an error.
-            throw new Error('Not possible to remove left recursion.');
-        } else {
-            return {
-                type: 'choice',
-                children: [
-                    ...rChildren,
-                    ...rChildren.map<Sequence>((child) => {
-                        return {
-                            type: 'sequence',
-                            children: [
-                                child,
-                                {
-                                    type: 'choice',
-                                    children: lChildren.map((lChild) => removeDirectLeftRecursion(lChild, nonTerminal))
-                                },
-                                {
-                                    type: 'reference',
-                                    name: nonTerminal
-                                }
-                            ]
-                        };
-                    })
-                ]
-            };
-        }
-    } else if (rule.type === 'optional') {
-        return { type: 'empty' };
-    } else if (rule.type === 'empty') {
-        return rule;
-    } else if (rule.type === 'reference') {
-        return { type: 'empty' };
-    } else if (rule.type === 'terminal') {
-        return rule;
-    } else if (rule.type === 'repeat') {
-
-    }
-}
-
-function removeLeftRecursion(grammar: Grammar) {
-    const nonTerminals = Object.keys(grammar);
-
-    for (let i = 0; i < nonTerminals.length; i++) {
-        for (let j = 0; j < i; j++) {
-            const newRule = removeIndirectLeftRecursion(grammar, grammar[nonTerminals[i]], nonTerminals[j]);
-        }
-    }
-}
-
 function toBnf(grammar: Grammar): BnfGrammar {
-    const nonTerminals = Object.keys(grammar);
     const newGrammarRules: BnfGrammar = {};
     let newNonTerminalCounter = 0;
 
@@ -479,12 +364,26 @@ function toBnf(grammar: Grammar): BnfGrammar {
                 children: [{ type: 'reference', name: newNonTerminal }]
             };
         } else if (rule.type === 'sequence') {
-            return {
-                type: 'choice',
-                children: rule.children
-                    .map(toBnfChoice)
-                    .reduce<BnfChoice['children']>((choices, choice) => [...choices, ...choice.children], [])
-            };
+            // E -> (a | b) (c | d) (e | f)
+            // TODO: figure out how to n^2 this shit.
+            const newSequences = rule.children
+                .map(toBnfChoice)
+                .reduce((previousChoice, nextChoice) => {
+                    return {
+                        type: 'choice',
+                        children: previousChoice.children
+                            .map(toBnfSequence)
+                            .map((previousSequence) =>
+                                nextChoice.children
+                                    .map(toBnfSequence)
+                                    .map((sequence) => [...previousSequence.children, ...sequence.children])
+                            )
+                            .reduce((acc, val) => [
+                                ...acc,
+                                ...val
+                            ], [])
+                    };
+                });
         } else {
             return {
                 type: 'choice',
@@ -503,4 +402,32 @@ function toBnf(grammar: Grammar): BnfGrammar {
     return newGrammar;
 }
 
-console.log(parse(grammar, rules, 0));
+function stringifyGrammarSymbol(rule: GrammarSymbol): string {
+    if (rule.type === 'empty') {
+        return 'ε';
+    } else if (rule.type === 'choice') {
+        return rule.children.map(stringifyGrammarSymbol).join(' | ');
+    } else if (rule.type === 'optional') {
+        return `[${stringifyGrammarSymbol(rule.child)}]`;
+    } else if (rule.type === 'reference') {
+        return rule.name;
+    } else if (rule.type === 'repeat') {
+        return `{${stringifyGrammarSymbol(rule.child)}}`;
+    } else if (rule.type === 'sequence') {
+        return rule.children.map(stringifyGrammarSymbol).join(' ');
+    } else {
+        return rule.character;
+    }
+}
+
+function printGrammar(grammar: Grammar) {
+    for (const nonTerminal of Object.keys(grammar)) {
+        console.log(`${nonTerminal} -> ${stringifyGrammarSymbol(grammar[nonTerminal])}`);
+    }
+}
+
+printGrammar(grammar);
+console.log('-------------------------------------');
+printGrammar(toBnf(grammar));
+
+// console.log(parse(grammar, rules, 0));
