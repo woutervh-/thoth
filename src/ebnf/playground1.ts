@@ -531,4 +531,5 @@ printGrammar(toBnf(grammar));
 console.log('-------------------------------------');
 printGrammar(removeLeftRecursion(toBnf(grammar)));
 
-console.log(parse(removeLeftRecursion(toBnf(grammar)), rules, input.split(''), 0));
+const newGrammar = removeLeftRecursion(toBnf(grammar));
+console.log(parse(newGrammar, newGrammar.rules, input.split(''), 0));
