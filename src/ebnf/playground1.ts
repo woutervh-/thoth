@@ -364,26 +364,31 @@ function toBnf(grammar: Grammar): BnfGrammar {
                 children: [{ type: 'reference', name: newNonTerminal }]
             };
         } else if (rule.type === 'sequence') {
-            // E -> (a | b) (c | d) (e | f)
-            // TODO: figure out how to n^2 this shit.
             const newSequences = rule.children
                 .map(toBnfChoice)
-                .reduce((previousChoice, nextChoice) => {
+                .map((choice) => choice.children
+                    .map(toBnfSequence)
+                    .map((sequence) => sequence.children)
+                )
+                .reduce((previousSequences, nextSequences) => {
+                    const newSequences: BnfSequence['children'][] = [];
+                    for (const previousSequence of previousSequences) {
+                        for (const nextSequence of nextSequences) {
+                            newSequences.push([...previousSequence, ...nextSequence]);
+                        }
+                    }
+                    return newSequences;
+                })
+                .map<BnfSequence>((sequence) => {
                     return {
-                        type: 'choice',
-                        children: previousChoice.children
-                            .map(toBnfSequence)
-                            .map((previousSequence) =>
-                                nextChoice.children
-                                    .map(toBnfSequence)
-                                    .map((sequence) => [...previousSequence.children, ...sequence.children])
-                            )
-                            .reduce((acc, val) => [
-                                ...acc,
-                                ...val
-                            ], [])
+                        type: 'sequence',
+                        children: sequence
                     };
                 });
+            return {
+                type: 'choice',
+                children: newSequences
+            };
         } else {
             return {
                 type: 'choice',
