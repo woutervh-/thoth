@@ -406,7 +406,9 @@ function stringifyProduction(rule: EbnfProduction): string {
     if (rule.type === 'empty') {
         return 'ε';
     } else if (rule.type === 'choice') {
-        return rule.children.map(stringifyProduction).join(' | ');
+        return rule.children.length >= 1
+            ? rule.children.map(stringifyProduction).join(' | ')
+            : '∅';
     } else if (rule.type === 'optional') {
         return `[${stringifyProduction(rule.child)}]`;
     } else if (rule.type === 'reference') {
@@ -414,7 +416,9 @@ function stringifyProduction(rule: EbnfProduction): string {
     } else if (rule.type === 'repeat') {
         return `{${stringifyProduction(rule.child)}}`;
     } else if (rule.type === 'sequence') {
-        return rule.children.map(stringifyProduction).join(' ');
+        return rule.children.length >= 1
+            ? rule.children.map(stringifyProduction).join(' ')
+            : 'ε';
     } else {
         return rule.character;
     }
@@ -429,7 +433,6 @@ function printGrammar(grammar: EbnfGrammar) {
 function removeLeftRecursion(grammar: BnfGrammar): BnfGrammar {
     const nonTerminals = Object.keys(grammar);
     const newGrammar: BnfGrammar = {};
-    // let newNonTerminalCounter = 0;
 
     function toBnfChoice(rule: BnfProduction): BnfChoice {
         if (rule.type === 'choice') {
@@ -461,9 +464,27 @@ function removeLeftRecursion(grammar: BnfGrammar): BnfGrammar {
         }
     }
 
+    function removeDirectLeftRecursion(sequences: BnfSequence['children'][], nonTerminal: string): [BnfSequence['children'][], BnfSequence['children'][]] {
+        const newSequencesA: BnfSequence['children'][] = [];
+        const newSequencesB: BnfSequence['children'][] = [];
+
+        for (const sequence of sequences) {
+            const [first, ...rest] = sequence;
+            if (first.type === 'reference' && first.name === nonTerminal) {
+                newSequencesB.push(rest);
+                newSequencesB.push([...rest, { type: 'reference', name: `${nonTerminal}'` }]);
+            } else {
+                newSequencesA.push(sequence);
+                newSequencesA.push([...sequence, { type: 'reference', name: `${nonTerminal}'` }]);
+            }
+        }
+
+        return [newSequencesA, newSequencesB];
+    }
+
     for (let i = 0; i < nonTerminals.length; i++) {
         const oldSequencesA = toBnfChoice(grammar[nonTerminals[i]]).children.map(toBnfSequence).map((sequence) => sequence.children);
-        const newSequencesA: BnfSequence['children'][] = [...oldSequencesA];
+        const newSequencesA = [...oldSequencesA];
         for (let j = 0; j < i; j++) {
             const sequencesB = toBnfChoice(grammar[nonTerminals[j]]).children.map(toBnfSequence);
             for (const oldSequenceA of oldSequencesA) {
@@ -474,15 +495,39 @@ function removeLeftRecursion(grammar: BnfGrammar): BnfGrammar {
                 }
             }
         }
-        newGrammar[nonTerminals[i]] = {
-            type: 'choice',
-            children: [...newSequencesA].map<BnfSequence>((sequence) => {
-                return {
-                    type: 'sequence',
-                    children: sequence
-                };
-            })
-        };
+
+        const [sequencesA, sequencesB] = removeDirectLeftRecursion(newSequencesA, nonTerminals[i]);
+
+        if (sequencesB.length >= 1) {
+            newGrammar[nonTerminals[i]] = {
+                type: 'choice',
+                children: sequencesA.map<BnfSequence>((sequence) => {
+                    return {
+                        type: 'sequence',
+                        children: sequence
+                    };
+                })
+            };
+            newGrammar[`${nonTerminals[i]}'`] = {
+                type: 'choice',
+                children: sequencesB.map<BnfSequence>((sequence) => {
+                    return {
+                        type: 'sequence',
+                        children: sequence
+                    };
+                })
+            };
+        } else {
+            newGrammar[nonTerminals[i]] = {
+                type: 'choice',
+                children: newSequencesA.map<BnfSequence>((sequence) => {
+                    return {
+                        type: 'sequence',
+                        children: sequence
+                    };
+                })
+            };
+        }
     }
 
     return newGrammar;
