@@ -8,7 +8,6 @@ interface Terminal {
 interface Reference {
     type: 'reference';
     name: string;
-    original?: Reference;
 }
 
 interface Sequence {
@@ -309,13 +308,7 @@ function toBnf(grammar: EbnfGrammar): BnfGrammar {
         if (rule.type === 'reference') {
             return {
                 type: 'choice',
-                children: [
-                    {
-                        type: 'reference',
-                        name: rule.name,
-                        original: rule
-                    }
-                ]
+                children: [rule]
             };
         } else if (rule.type === 'choice') {
             return {
