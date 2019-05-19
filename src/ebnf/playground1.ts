@@ -446,20 +446,19 @@ const grammar: EbnfGrammar = {
 };
 
 const input = `E=E,'^',E|'-',E|E,('*'|'/'),E|E,('+'|'-'),E|ID|NUMBER;S=ID,'=',E,';';P={S}`;
-const characters = input.split('');
 let indent = '';
 
-function parseTerminal(terminal: Terminal, position: number) {
-    if (characters[position] === terminal.character) {
+function parseTerminal(terminal: Terminal, input: string[], position: number) {
+    if (input[position] === terminal.character) {
         return 1;
     } else {
         return -1;
     }
 }
 
-function parseChoice(grammar: EbnfGrammar, rule: Choice, position: number) {
+function parseChoice(grammar: EbnfGrammar, rule: Choice, input: string[], position: number) {
     for (const child of rule.children) {
-        const advance = parse(grammar, child, position);
+        const advance = parse(grammar, child, input, position);
         if (advance >= 0) {
             return advance;
         }
@@ -467,18 +466,18 @@ function parseChoice(grammar: EbnfGrammar, rule: Choice, position: number) {
     return -1;
 }
 
-function parseReference(grammar: EbnfGrammar, rule: Reference, position: number) {
+function parseReference(grammar: EbnfGrammar, rule: Reference, input: string[], position: number) {
     console.log(`${indent}${rule.name}`);
     indent += '  ';
-    const result = parse(grammar, grammar[rule.name], position);
+    const result = parse(grammar, grammar[rule.name], input, position);
     indent = indent.substr(2);
     return result;
 }
 
-function parseRepeat(grammar: EbnfGrammar, rule: Repeat, position: number) {
+function parseRepeat(grammar: EbnfGrammar, rule: Repeat, input: string[], position: number) {
     let advance = 0;
     while (true) {
-        const next = parse(grammar, rule.child, position + advance);
+        const next = parse(grammar, rule.child, input, position + advance);
         if (next >= 0) {
             advance += next;
         } else {
@@ -488,10 +487,10 @@ function parseRepeat(grammar: EbnfGrammar, rule: Repeat, position: number) {
     return advance;
 }
 
-function parseSequence(grammar: EbnfGrammar, rule: Sequence, position: number) {
+function parseSequence(grammar: EbnfGrammar, rule: Sequence, input: string[], position: number) {
     let advance = 0;
     for (const child of rule.children) {
-        const next = parse(grammar, child, position + advance);
+        const next = parse(grammar, child, input, position + advance);
         if (next >= 0) {
             advance += next;
         } else {
@@ -501,8 +500,8 @@ function parseSequence(grammar: EbnfGrammar, rule: Sequence, position: number) {
     return advance;
 }
 
-function parseOptional(grammar: EbnfGrammar, rule: Optional, position: number) {
-    const advance = parse(grammar, rule.child, position);
+function parseOptional(grammar: EbnfGrammar, rule: Optional, input: string[], position: number) {
+    const advance = parse(grammar, rule.child, input, position);
     if (advance >= 0) {
         return advance;
     } else {
@@ -514,15 +513,15 @@ function parseEmpty() {
     return 0;
 }
 
-function parse(grammar: EbnfGrammar, rule: EbnfProduction, position: number): number {
+function parse(grammar: EbnfGrammar, rule: EbnfProduction, input: string[], position: number): number {
     switch (rule.type) {
-        case 'choice': return parseChoice(grammar, rule, position);
+        case 'choice': return parseChoice(grammar, rule, input, position);
         case 'empty': return parseEmpty();
-        case 'optional': return parseOptional(grammar, rule, position);
-        case 'reference': return parseReference(grammar, rule, position);
-        case 'repeat': return parseRepeat(grammar, rule, position);
-        case 'sequence': return parseSequence(grammar, rule, position);
-        case 'terminal': return parseTerminal(rule, position);
+        case 'optional': return parseOptional(grammar, rule, input, position);
+        case 'reference': return parseReference(grammar, rule, input, position);
+        case 'repeat': return parseRepeat(grammar, rule, input, position);
+        case 'sequence': return parseSequence(grammar, rule, input, position);
+        case 'terminal': return parseTerminal(rule, input, position);
     }
 }
 
@@ -532,4 +531,4 @@ printGrammar(toBnf(grammar));
 console.log('-------------------------------------');
 printGrammar(removeLeftRecursion(toBnf(grammar)));
 
-console.log(parse(removeLeftRecursion(toBnf(grammar)), rules, 0));
+console.log(parse(removeLeftRecursion(toBnf(grammar)), rules, input.split(''), 0));
