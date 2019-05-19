@@ -8,58 +8,53 @@ interface Terminal {
 interface Reference {
     type: 'reference';
     name: string;
+    original?: Reference;
 }
 
 interface Sequence {
     type: 'sequence';
-    children: GrammarSymbol[];
+    children: EbnfProduction[];
 }
 
 interface Choice {
     type: 'choice';
-    children: GrammarSymbol[];
+    children: EbnfProduction[];
 }
 
 interface Repeat {
     type: 'repeat';
-    child: GrammarSymbol;
+    child: EbnfProduction;
 }
 
 interface Optional {
     type: 'optional';
-    child: GrammarSymbol;
+    child: EbnfProduction;
 }
 
 interface Empty {
     type: 'empty';
 }
 
-type GrammarSymbol = Terminal | Reference | Sequence | Choice | Repeat | Optional | Empty;
+type EbnfProduction = Terminal | Reference | Sequence | Choice | Repeat | Optional | Empty;
 
-interface Grammar {
-    [Key: string]: GrammarSymbol;
-}
-
-interface BnfReference {
-    type: 'reference';
-    name: string;
-    original?: Reference;
+interface EbnfGrammar {
+    [Key: string]: EbnfProduction;
 }
 
 interface BnfSequence {
     type: 'sequence';
-    children: (Terminal | BnfReference | Empty)[];
+    children: (Terminal | Reference | Empty)[];
 }
 
 interface BnfChoice {
     type: 'choice';
-    children: (BnfSequence | Terminal | BnfReference | Empty)[];
+    children: (BnfSequence | Terminal | Reference | Empty)[];
 }
 
-type BnfGrammarSymbol = BnfChoice | BnfSequence | Terminal | BnfReference | Empty;
+type BnfProduction = BnfChoice | BnfSequence | Terminal | Reference | Empty;
 
 interface BnfGrammar {
-    [Key: string]: BnfGrammarSymbol;
+    [Key: string]: BnfProduction;
 }
 
 function createTerminal(character: string): Terminal {
@@ -201,7 +196,7 @@ const rules: Repeat = {
     }
 };
 
-const grammar: Grammar = {
+const grammar: EbnfGrammar = {
     letter,
     digit,
     symbol,
@@ -226,7 +221,7 @@ function parseTerminal(terminal: Terminal, position: number) {
     }
 }
 
-function parseChoice(grammar: Grammar, rule: Choice, position: number) {
+function parseChoice(grammar: EbnfGrammar, rule: Choice, position: number) {
     for (const child of rule.children) {
         const advance = parse(grammar, child, position);
         if (advance >= 0) {
@@ -236,7 +231,7 @@ function parseChoice(grammar: Grammar, rule: Choice, position: number) {
     return -1;
 }
 
-function parseReference(grammar: Grammar, rule: Reference, position: number) {
+function parseReference(grammar: EbnfGrammar, rule: Reference, position: number) {
     console.log(`${indent}${rule.name}`);
     indent += '  ';
     const result = parse(grammar, grammar[rule.name], position);
@@ -244,7 +239,7 @@ function parseReference(grammar: Grammar, rule: Reference, position: number) {
     return result;
 }
 
-function parseRepeat(grammar: Grammar, rule: Repeat, position: number) {
+function parseRepeat(grammar: EbnfGrammar, rule: Repeat, position: number) {
     let advance = 0;
     while (true) {
         const next = parse(grammar, rule.child, position + advance);
@@ -257,7 +252,7 @@ function parseRepeat(grammar: Grammar, rule: Repeat, position: number) {
     return advance;
 }
 
-function parseSequence(grammar: Grammar, rule: Sequence, position: number) {
+function parseSequence(grammar: EbnfGrammar, rule: Sequence, position: number) {
     let advance = 0;
     for (const child of rule.children) {
         const next = parse(grammar, child, position + advance);
@@ -270,7 +265,7 @@ function parseSequence(grammar: Grammar, rule: Sequence, position: number) {
     return advance;
 }
 
-function parseOptional(grammar: Grammar, rule: Optional, position: number) {
+function parseOptional(grammar: EbnfGrammar, rule: Optional, position: number) {
     const advance = parse(grammar, rule.child, position);
     if (advance >= 0) {
         return advance;
@@ -283,7 +278,7 @@ function parseEmpty() {
     return 0;
 }
 
-function parse(grammar: Grammar, rule: GrammarSymbol, position: number): number {
+function parse(grammar: EbnfGrammar, rule: EbnfProduction, position: number): number {
     switch (rule.type) {
         case 'choice': return parseChoice(grammar, rule, position);
         case 'empty': return parseEmpty();
@@ -295,7 +290,7 @@ function parse(grammar: Grammar, rule: GrammarSymbol, position: number): number 
     }
 }
 
-function toBnf(grammar: Grammar): BnfGrammar {
+function toBnf(grammar: EbnfGrammar): BnfGrammar {
     const newGrammarRules: BnfGrammar = {};
     let newNonTerminalCounter = 0;
 
@@ -310,7 +305,7 @@ function toBnf(grammar: Grammar): BnfGrammar {
         }
     }
 
-    function toBnfChoice(rule: GrammarSymbol): BnfChoice {
+    function toBnfChoice(rule: EbnfProduction): BnfChoice {
         if (rule.type === 'reference') {
             return {
                 type: 'choice',
@@ -407,32 +402,96 @@ function toBnf(grammar: Grammar): BnfGrammar {
     return newGrammar;
 }
 
-function stringifyGrammarSymbol(rule: GrammarSymbol): string {
+function stringifyProduction(rule: EbnfProduction): string {
     if (rule.type === 'empty') {
         return 'ε';
     } else if (rule.type === 'choice') {
-        return rule.children.map(stringifyGrammarSymbol).join(' | ');
+        return rule.children.map(stringifyProduction).join(' | ');
     } else if (rule.type === 'optional') {
-        return `[${stringifyGrammarSymbol(rule.child)}]`;
+        return `[${stringifyProduction(rule.child)}]`;
     } else if (rule.type === 'reference') {
         return rule.name;
     } else if (rule.type === 'repeat') {
-        return `{${stringifyGrammarSymbol(rule.child)}}`;
+        return `{${stringifyProduction(rule.child)}}`;
     } else if (rule.type === 'sequence') {
-        return rule.children.map(stringifyGrammarSymbol).join(' ');
+        return rule.children.map(stringifyProduction).join(' ');
     } else {
         return rule.character;
     }
 }
 
-function printGrammar(grammar: Grammar) {
+function printGrammar(grammar: EbnfGrammar) {
     for (const nonTerminal of Object.keys(grammar)) {
-        console.log(`${nonTerminal} -> ${stringifyGrammarSymbol(grammar[nonTerminal])}`);
+        console.log(`${nonTerminal} -> ${stringifyProduction(grammar[nonTerminal])}`);
     }
+}
+
+function removeLeftRecursion(grammar: BnfGrammar): BnfGrammar {
+    const nonTerminals = Object.keys(grammar);
+    const newGrammar: BnfGrammar = {};
+    // let newNonTerminalCounter = 0;
+
+    function toBnfChoice(rule: BnfProduction): BnfChoice {
+        if (rule.type === 'choice') {
+            return rule;
+        } else {
+            return { type: 'choice', children: [rule] };
+        }
+    }
+
+    function toBnfSequence(rule: BnfChoice['children'][number]): BnfSequence {
+        if (rule.type === 'sequence') {
+            return rule;
+        } else {
+            return { type: 'sequence', children: [rule] };
+        }
+    }
+
+    function isReachable(rule: BnfProduction, nonTerminal: string): boolean {
+        if (rule.type === 'choice') {
+            return rule.children.some((child) => isReachable(child, nonTerminal));
+        } else if (rule.type === 'empty') {
+            return false;
+        } else if (rule.type === 'reference') {
+            return rule.name === nonTerminal;
+        } else if (rule.type === 'sequence') {
+            return rule.children.some((child) => isReachable(child, nonTerminal));
+        } else {
+            return false;
+        }
+    }
+
+    for (let i = 0; i < nonTerminals.length; i++) {
+        const oldSequencesA = toBnfChoice(grammar[nonTerminals[i]]).children.map(toBnfSequence).map((sequence) => sequence.children);
+        const newSequencesA: BnfSequence['children'][] = [...oldSequencesA];
+        for (let j = 0; j < i; j++) {
+            const sequencesB = toBnfChoice(grammar[nonTerminals[j]]).children.map(toBnfSequence);
+            for (const oldSequenceA of oldSequencesA) {
+                const [first, ...rest] = oldSequenceA;
+                if (first.type === 'reference' && first.name === nonTerminals[j] && isReachable(grammar[nonTerminals[j]], nonTerminals[i])) {
+                    const index = newSequencesA.indexOf(oldSequenceA);
+                    newSequencesA.splice(index, 1, ...sequencesB.map((sequencesB) => [...sequencesB.children, ...rest]));
+                }
+            }
+        }
+        newGrammar[nonTerminals[i]] = {
+            type: 'choice',
+            children: [...newSequencesA].map<BnfSequence>((sequence) => {
+                return {
+                    type: 'sequence',
+                    children: sequence
+                };
+            })
+        };
+    }
+
+    return newGrammar;
 }
 
 printGrammar(grammar);
 console.log('-------------------------------------');
 printGrammar(toBnf(grammar));
+console.log('-------------------------------------');
+printGrammar(removeLeftRecursion(toBnf(grammar)));
 
 // console.log(parse(grammar, rules, 0));
