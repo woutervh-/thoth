@@ -444,6 +444,7 @@ const grammar: EbnfGrammar = {
     rule,
     rules
 };
+const bnfGrammar = removeLeftRecursion(toBnf(grammar));
 
 const input = `E=E,'^',E|'-',E|E,('*'|'/'),E|E,('+'|'-'),E|ID|NUMBER;S=ID,'=',E,';';P={S}`;
 let indent = '';
@@ -525,11 +526,32 @@ function parse(grammar: EbnfGrammar, rule: EbnfProduction, input: string[], posi
     }
 }
 
+interface AcceptingParseState {
+    type: 'accepting';
+}
+
+interface PendingParseState {
+    type: 'pending';
+    rule: BnfProduction;
+}
+
+interface RejectingParseState {
+    type: 'rejecting';
+}
+
+type ParseState = AcceptingParseState | PendingParseState | RejectingParseState;
+
+function accept(grammar: BnfGrammar, rule: BnfProduction, input: string): ParseState[] {
+    switch (rule.type) {
+        case 'choice':
+            return rule.children.map((child) => accept(grammar, child, input)).reduce((accumulator, next) => [...accumulator, ...next], []);
+    }
+}
+
 printGrammar(grammar);
 console.log('-------------------------------------');
 printGrammar(toBnf(grammar));
 console.log('-------------------------------------');
 printGrammar(removeLeftRecursion(toBnf(grammar)));
 
-const newGrammar = removeLeftRecursion(toBnf(grammar));
-console.log(parse(newGrammar, newGrammar.rules, input.split(''), 0));
+console.log(parse(bnfGrammar, bnfGrammar.rules, input.split(''), 0));
