@@ -1,4 +1,4 @@
-export const module = true;
+import * as perfHooks from 'perf_hooks';
 
 interface Terminal {
     type: 'terminal';
@@ -715,6 +715,7 @@ if (bnfGrammar.rules.type === 'choice') {
     }];
 }
 
+const start = perfHooks.performance.now();
 for (let i = 0; i < tokens.length; i++) {
     console.log('-------------------------------------');
     console.log(`Consuming: ${tokens.slice(0, i + 1).join('')}`);
@@ -729,12 +730,25 @@ for (let i = 0; i < tokens.length; i++) {
             }
         }
     }
-    parseStates = dedupe(newParseStates, bnfChoiceChildEquals).map<PendingParseState>((rule) => {
-        return {
-            type: 'pending',
-            rule
-        };
-    });
+
+    if (2 < 1) {
+        dedupe(newParseStates.map(simplifyChoiceChild), bnfChoiceChildEquals);
+    }
+
+    // parseStates = dedupe(newParseStates.map(simplifyChoiceChild), bnfChoiceChildEquals)
+    parseStates = newParseStates.map(simplifyChoiceChild)
+        .map<PendingParseState>((rule) => {
+            return {
+                type: 'pending',
+                rule
+            };
+        });
+}
+const end = perfHooks.performance.now();
+console.log(`Took ${end - start}ms.`);
+
+for (const parseState of parseStates) {
+    console.log(stringifyProduction(parseState.rule));
 }
 
 // console.log(accept(bnfGrammar, bnfGrammar.rules, input.split('')));
