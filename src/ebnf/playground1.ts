@@ -293,6 +293,49 @@ function removeLeftRecursion(grammar: BnfGrammar): BnfGrammar {
     return newGrammar;
 }
 
+function simplifyBnf(grammar: BnfGrammar): BnfGrammar {
+    function simplifyChoiceChild(rule: BnfChoice['children'][number]): BnfChoice['children'][number] {
+        if (rule.type === 'sequence') {
+            const children = rule.children;
+            if (children.length === 0) {
+                return { type: 'empty' };
+            } else if (children.length === 1) {
+                return children[0];
+            } else {
+                return {
+                    type: 'sequence',
+                    children
+                };
+            }
+        } else {
+            return rule;
+        }
+    }
+
+    function simplifyRule(rule: BnfProduction): BnfProduction {
+        if (rule.type === 'choice') {
+            const children = rule.children.map(simplifyChoiceChild);
+            if (children.length === 1) {
+                return children[0];
+            } else {
+                return {
+                    type: 'choice',
+                    children
+                };
+            }
+        } else {
+            return simplifyChoiceChild(rule);
+        }
+    }
+
+    const newGrammar: BnfGrammar = {};
+    for (const nonTerminal of Object.keys(grammar)) {
+        newGrammar[nonTerminal] = simplifyRule(grammar[nonTerminal]);
+    }
+
+    return newGrammar;
+}
+
 function createTerminal(character: string): Terminal {
     return { type: 'terminal', character };
 }
@@ -444,7 +487,7 @@ const grammar: EbnfGrammar = {
     rule,
     rules
 };
-const bnfGrammar = removeLeftRecursion(toBnf(grammar));
+const bnfGrammar = simplifyBnf(removeLeftRecursion(toBnf(grammar)));
 
 const input = `E=E,'^',E|'-',E|E,('*'|'/'),E|E,('+'|'-'),E|ID|NUMBER;S=ID,'=',E,';';P={S}`;
 let indent = '';
@@ -532,19 +575,68 @@ interface AcceptingParseState {
 
 interface PendingParseState {
     type: 'pending';
-    rule: BnfProduction;
+    rule: BnfChoice['children'][number];
+}
+
+interface EmptyParseState {
+    type: 'empty';
 }
 
 interface RejectingParseState {
     type: 'rejecting';
 }
 
-type ParseState = AcceptingParseState | PendingParseState | RejectingParseState;
+type ParseState = AcceptingParseState | PendingParseState | EmptyParseState | RejectingParseState;
 
 function accept(grammar: BnfGrammar, rule: BnfProduction, input: string): ParseState[] {
     switch (rule.type) {
         case 'choice':
-            return rule.children.map((child) => accept(grammar, child, input)).reduce((accumulator, next) => [...accumulator, ...next], []);
+            return rule.children
+                .map((child) => accept(grammar, child, input))
+                .reduce((accumulator, next) => [...accumulator, ...next], []);
+        case 'empty':
+            return [{ type: 'empty' }];
+        case 'reference':
+            return accept(grammar, grammar[rule.name], input);
+        case 'sequence': {
+            if (rule.children.length === 0) {
+                return [{ type: 'empty' }];
+            } else if (rule.children.length === 1) {
+                return accept(grammar, rule.children[0], input);
+            } else {
+                const remaining: BnfSequence = { type: 'sequence', children: rule.children.slice(1) };
+                return accept(grammar, rule.children[0], input).map<ParseState[]>((state) => {
+                    if (state.type === 'rejecting') {
+                        return [state];
+                    } else if (state.type === 'empty') {
+                        return accept(grammar, remaining, input);
+                    } else if (state.type === 'accepting') {
+                        return [{
+                            type: 'pending',
+                            rule: remaining
+                        }];
+                    } else {
+                        if (state.rule.type === 'sequence') {
+                            return [{
+                                type: 'pending',
+                                rule: { type: 'sequence', children: [...state.rule.children, ...remaining.children] }
+                            }];
+                        } else {
+                            return [{
+                                type: 'pending',
+                                rule: { type: 'sequence', children: [state.rule, ...remaining.children] }
+                            }];
+                        }
+                    }
+                }).reduce((accumulator, next) => [...accumulator, ...next], []);
+            }
+        }
+        case 'terminal':
+            if (rule.character === input) {
+                return [{ type: 'accepting' }];
+            } else {
+                return [{ type: 'rejecting' }];
+            }
     }
 }
 
@@ -554,4 +646,39 @@ printGrammar(toBnf(grammar));
 console.log('-------------------------------------');
 printGrammar(removeLeftRecursion(toBnf(grammar)));
 
-console.log(parse(bnfGrammar, bnfGrammar.rules, input.split(''), 0));
+// console.log(parse(bnfGrammar, bnfGrammar.rules, input.split(''), 0));
+
+const tokens = input.split('');
+let parseStates: PendingParseState[];
+if (bnfGrammar.rules.type === 'choice') {
+    parseStates = bnfGrammar.rules.children.map<PendingParseState>((rule) => {
+        return {
+            type: 'pending',
+            rule
+        };
+    });
+} else {
+    parseStates = [{
+        type: 'pending',
+        rule: bnfGrammar.rules
+    }];
+}
+
+for (const token of tokens) {
+    console.log('-------------------------------------');
+    console.log(`Consuming: ${token}`);
+    const newParseStates: PendingParseState[] = [];
+    for (const parseState of parseStates) {
+        console.log(`Old: ${stringifyProduction(parseState.rule)}`);
+        const nextNewParseStates = accept(bnfGrammar, parseState.rule, token);
+        for (const nextNewParseState of nextNewParseStates) {
+            if (nextNewParseState.type === 'pending') {
+                newParseStates.push(nextNewParseState);
+                console.log(`    New: ${stringifyProduction(nextNewParseState.rule)}`);
+            }
+        }
+    }
+    parseStates = newParseStates;
+}
+
+// console.log(accept(bnfGrammar, bnfGrammar.rules, input.split('')));
