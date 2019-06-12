@@ -477,34 +477,34 @@ const bnfGrammar = normalizeBnf(simplifyBnf(removeLeftRecursion(toBnf(grammar)))
 
 const input = `A=1+2;B=A+3;C=1*2+3*4;`;
 
-// interface ParseTreeState {
-//     sequence: BnfSequence;
-//     index: number;
-// }
+interface ParseTreeState {
+    sequence: BnfSequence;
+    index: number;
+}
 
-// const parseTreeStates: ParseTreeState[] = [{
-//     sequence: { type: 'sequence', children: [{ type: 'reference', name: 'statements' }] },
-//     index: 0
-// }];
+const parseTreeStates: ParseTreeState[] = [{
+    sequence: { type: 'sequence', children: [{ type: 'reference', name: 'statements' }] },
+    index: 0
+}];
 
-// for (let i = 0; i < input.length; i++) {
-//     // Make queue of pending parse tree states, initialize with previously finished/advanced parse tree states
-//     const pendingParseTreeStates = parseTreeStates;
-//     // Make empty list of finished/advanced parse tree states
-//     const nextParseTreeStates: ParseTreeState[] = [];
-//     while (pendingParseTreeStates.length >= 1) {
-//         // Pop and advance a parseTreeState from the queue
-//         const parseTreeState = pendingParseTreeStates.pop()!;
+for (let i = 0; i < input.length; i++) {
+    // Make queue of pending parse tree states, initialize with previously finished/advanced parse tree states
+    const pendingParseTreeStates = parseTreeStates;
+    // Make empty list of finished/advanced parse tree states
+    const nextParseTreeStates: ParseTreeState[] = [];
+    while (pendingParseTreeStates.length >= 1) {
+        // Pop and advance a parseTreeState from the queue
+        const parseTreeState = pendingParseTreeStates.pop()!;
 
-//         // Add any new pending parse tree states to the queue (in case of choice), check if it doesn't exist yet (in the finished/advanced list)
-//         // Add "advanced" (by 1 step) parse tree states to finished/advanced list
-//         // Discard reject parse tree states
-//     }
-// }
+        // Add any new pending parse tree states to the queue (in case of choice), check if it doesn't exist yet (in the finished/advanced list)
+        // Add "advanced" (by 1 step) parse tree states to finished/advanced list
+        // Discard reject parse tree states
+    }
+}
 
-// function nextParseTree(grammar: NormalizedBnfGrammar, state: ParseTreeState): ParseTreeState[] {
+function nextParseTree(grammar: NormalizedBnfGrammar, state: ParseTreeState): ParseTreeState[] {
 
-// }
+}
 
 interface AcceptingParseState {
     type: 'accepting';
