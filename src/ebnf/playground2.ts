@@ -411,9 +411,15 @@ const identifier: Sequence = {
     ]
 };
 
-const value: Repeat = {
-    type: 'repeat',
-    child: { type: 'reference', name: 'digit' }
+const value: Sequence = {
+    type: 'sequence',
+    children: [
+        { type: 'reference', name: 'digit' },
+        {
+            type: 'repeat',
+            child: { type: 'reference', name: 'digit' }
+        }
+    ]
 };
 
 const expression: Choice = {
@@ -471,32 +477,34 @@ const bnfGrammar = normalizeBnf(simplifyBnf(removeLeftRecursion(toBnf(grammar)))
 
 const input = `A=1+2;B=A+3;C=1*2+3*4;`;
 
-interface ParseTreeState {
-    rule: BnfSequence;
-    position: number;
-    index: number;
-}
+// interface ParseTreeState {
+//     sequence: BnfSequence;
+//     index: number;
+// }
 
-const parseTreeStates: ParseTreeState[] = [{
-    rule: { type: 'sequence', children: [{ type: 'reference', name: 'statements' }] },
-    index: 0,
-    position: 0
-}];
+// const parseTreeStates: ParseTreeState[] = [{
+//     sequence: { type: 'sequence', children: [{ type: 'reference', name: 'statements' }] },
+//     index: 0
+// }];
 
-for (let i = 0; i < input.length; i++) {
-    // Make queue of pending parse tree states, initialize with previously finished/advanced parse tree states
-    // Make empty list of finished/advanced parse tree states
-    while (queue.length >= 1) {
-        // Pop and advance a parseTreeState from the queue
-        // Add any new pending parse tree states to the queue (in case of choice)
-        // Add "advanced" (by 1 step) parse tree states to finished/advanced list
-        // Discard reject parse tree states
-    }
-}
+// for (let i = 0; i < input.length; i++) {
+//     // Make queue of pending parse tree states, initialize with previously finished/advanced parse tree states
+//     const pendingParseTreeStates = parseTreeStates;
+//     // Make empty list of finished/advanced parse tree states
+//     const nextParseTreeStates: ParseTreeState[] = [];
+//     while (pendingParseTreeStates.length >= 1) {
+//         // Pop and advance a parseTreeState from the queue
+//         const parseTreeState = pendingParseTreeStates.pop()!;
 
-function buildParseTree(grammar: NormalizedBnfGrammar) {
+//         // Add any new pending parse tree states to the queue (in case of choice), check if it doesn't exist yet (in the finished/advanced list)
+//         // Add "advanced" (by 1 step) parse tree states to finished/advanced list
+//         // Discard reject parse tree states
+//     }
+// }
 
-}
+// function nextParseTree(grammar: NormalizedBnfGrammar, state: ParseTreeState): ParseTreeState[] {
+
+// }
 
 interface AcceptingParseState {
     type: 'accepting';
@@ -635,21 +643,14 @@ function dedupe<T>(array: T[], test: (a: T, b: T) => boolean): T[] {
 
 const tokens = input.split('');
 let parseStates: PendingParseState[];
-if (bnfGrammar.statements.type === 'choice') {
-    parseStates = bnfGrammar.statements.children.map<PendingParseState>((rule) => {
-        return {
-            type: 'pending',
-            rule,
-            accepted: []
-        };
-    });
-} else {
-    parseStates = [{
+
+parseStates = bnfGrammar.statements.children.map<PendingParseState>((rule) => {
+    return {
         type: 'pending',
-        rule: bnfGrammar.statements,
+        rule,
         accepted: []
-    }];
-}
+    };
+});
 
 const start = perfHooks.performance.now();
 for (let i = 0; i < tokens.length; i++) {
