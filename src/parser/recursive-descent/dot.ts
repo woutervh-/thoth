@@ -20,7 +20,11 @@ export class Dot {
             while (queue.length >= 1) {
                 const node = queue.pop()!;
                 if (node.childNodes) {
-                    queue.push(...node.childNodes);
+                    for (const child of node.childNodes) {
+                        if (!nameMap.has(child)) {
+                            queue.push(child);
+                        }
+                    }
                 }
                 nameMap.set(node, `t${nameMap.size}`);
             }
@@ -39,7 +43,7 @@ export class Dot {
                     }
                 }
                 const label = Printer.stringifySequence(grammar[node.nonTerminal][node.sequenceIndex], node.termIndex);
-                nodes.push(`${nameMap.get(node)!} [label="${label}"];`);
+                nodes.push(`${nameMap.get(node)!} [label="(${node.tokenIndex}, ${label})"];`);
             }
         }
 

@@ -44,6 +44,7 @@ const initialRootNodes = grammar[startSymbol].map((sequence, index): RuleNode =>
         nonTerminal: startSymbol,
         sequenceIndex: index,
         termIndex: 0,
+        tokenIndex: 0,
         childNodes: null
     };
 });
@@ -52,15 +53,29 @@ function expandTerminalRules(nodes: RuleNode[], token: string): RuleNode[] {
     const nextNodes: RuleNode[] = [];
     for (const node of nodes) {
         const sequence = grammar[node.nonTerminal][node.sequenceIndex];
-        const term = sequence[node.termIndex];
+        if (node.termIndex >= sequence.length) {
+            continue;
+        }
 
+        const term = sequence[node.termIndex];
         if (term.type === 'terminal') {
             if (term.terminal === token) {
                 nextNodes.push({
                     nonTerminal: node.nonTerminal,
                     sequenceIndex: node.sequenceIndex,
                     termIndex: node.termIndex + 1,
+                    tokenIndex: node.tokenIndex,
                     childNodes: null
+                });
+            }
+        } else {
+            if (node.childNodes !== null) {
+                nextNodes.push({
+                    nonTerminal: node.nonTerminal,
+                    sequenceIndex: node.sequenceIndex,
+                    termIndex: node.termIndex,
+                    tokenIndex: node.tokenIndex,
+                    childNodes: expandTerminalRules(node.childNodes, token)
                 });
             }
         }
@@ -85,19 +100,26 @@ function expandNonTerminalRules(nodes: RuleNode[]): RuleNode[] {
         }
 
         const sequences = grammar[term.name];
-        const childNodes = sequences.map((sequence, index): RuleNode => {
-            return {
-                nonTerminal: term.name,
-                sequenceIndex: index,
-                childNodes: null,
-                termIndex: 0
-            };
-        });
+        let childNodes: RuleNode[];
+        if (node.childNodes === null) {
+            childNodes = sequences.map((sequence, index): RuleNode => {
+                return {
+                    nonTerminal: term.name,
+                    sequenceIndex: index,
+                    termIndex: 0,
+                    tokenIndex: node.tokenIndex + 1,
+                    childNodes: null,
+                };
+            });
+        } else {
+            childNodes = node.childNodes;
+        }
 
         nextNodes.push({
             nonTerminal: node.nonTerminal,
             sequenceIndex: node.sequenceIndex,
             termIndex: node.termIndex,
+            tokenIndex: node.tokenIndex,
             childNodes: expandNonTerminalRules(childNodes)
         });
     }
@@ -105,18 +127,59 @@ function expandNonTerminalRules(nodes: RuleNode[]): RuleNode[] {
     return nextNodes;
 }
 
+function areRuleNodesEqual(ruleNodeA: RuleNode, ruleNodeB: RuleNode) {
+    return ruleNodeA.nonTerminal === ruleNodeB.nonTerminal
+        && ruleNodeA.sequenceIndex === ruleNodeB.sequenceIndex
+        && ruleNodeA.termIndex === ruleNodeB.termIndex
+        && ruleNodeA.tokenIndex === ruleNodeB.tokenIndex;
+}
+
+function deduplicateNodes(nodes: RuleNode[]): RuleNode[] {
+    const nodeList: RuleNode[] = [];
+
+    function dedupe(node: RuleNode): RuleNode {
+        const found = nodeList.find((nodeB) => areRuleNodesEqual(node, nodeB));
+        if (found) {
+            return found;
+        }
+        nodeList.push(node);
+        if (node.childNodes === null) {
+            return node;
+        }
+        return {
+            ...node,
+            childNodes: node.childNodes.map(dedupe)
+        };
+    }
+
+    return nodes.map(dedupe);
+}
+
 function acceptToken(nodes: RuleNode[], token: string): RuleNode[] {
     let nextNodes = nodes.slice();
     nextNodes = expandTerminalRules(nextNodes, token);
     nextNodes = expandNonTerminalRules(nextNodes);
+    nextNodes = deduplicateNodes(nextNodes);
     return nextNodes;
 }
 
-let currentRootNodes = initialRootNodes;
+let currentRootNodes = expandNonTerminalRules(initialRootNodes);
 
 console.log('--- first rule tree ---');
 console.log(Dot.toDot(grammar, currentRootNodes));
 
 console.log('--- second rule tree ---');
 currentRootNodes = acceptToken(currentRootNodes, 'a');
+console.log(Dot.toDot(grammar, currentRootNodes));
+
+console.log('--- third rule tree ---');
+currentRootNodes = acceptToken(currentRootNodes, '*');
+console.log(Dot.toDot(grammar, currentRootNodes));
+
+console.log('--- fourth rule tree ---');
+currentRootNodes = acceptToken(currentRootNodes, 'a');
+console.log(Dot.toDot(grammar, currentRootNodes));
+
+console.log('--- fifth rule tree ---');
+currentRootNodes = acceptToken(currentRootNodes, '-');
 console.log(Dot.toDot(grammar, currentRootNodes));
