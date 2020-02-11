@@ -1,14 +1,14 @@
-interface NonTerminal {
+export interface NonTerminal {
     type: 'non-terminal';
     name: string;
 }
 
-interface Terminal<T> {
+export interface Terminal<T> {
     type: 'terminal';
     terminal: T;
 }
 
-type Term<T> = NonTerminal | Terminal<T>;
+export type Term<T> = NonTerminal | Terminal<T>;
 
 interface Alternative<T> {
     associativity: 'left' | 'right' | undefined;

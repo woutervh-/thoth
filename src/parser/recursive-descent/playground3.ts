@@ -9,7 +9,7 @@ let grammar: Grammar<string> = {
         [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '^' }, { type: 'non-terminal', name: 'E' }],
         [{ type: 'terminal', terminal: '-' }, { type: 'non-terminal', name: 'E' }],
         [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '*' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '+' }, { type: 'non-terminal', name: 'E' }],
+        [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '-' }, { type: 'non-terminal', name: 'E' }],
         [{ type: 'terminal', terminal: 'a' }]
     ]
 };
