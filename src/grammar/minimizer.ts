@@ -75,4 +75,12 @@ export class Minimizer {
         }
         return newGrammar;
     }
+
+    // public static removeDegenerateAlternatives<T>(grammar: Grammar<T>): Grammar<T> {
+    // TODO: Given a non-terminal, deduplicate its sequences that are identical.
+    // }
+
+    // public static reduceCommonSequences<T>(grammar: Grammar<T>): Grammar<T> {
+    // TODO: Given all sequences in the grammar, extract those that are repeated into new non-terminals.
+    // }
 }

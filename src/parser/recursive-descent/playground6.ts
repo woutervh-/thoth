@@ -53,47 +53,126 @@ const initialRootNodes = grammar[startSymbol].map((sequence, index): RuleNode =>
     };
 });
 
-function acceptToken(node: RuleNode, token: string): RuleNode | null {
+function stepTerminals(nodes: RuleNode[], token: string): RuleNode[] {
+    const seen = new Set<RuleNode>();
+    const rejected = new Set<RuleNode>();
+
+    function recurse(node: RuleNode) {
+        if (seen.has(node)) {
+            return;
+        }
+        seen.add(node);
+
+        const sequence = grammar[node.nonTerminal][node.sequenceIndex];
+        if (node.termIndex >= sequence.length) {
+            // Sequence has run out of symbols and cannot accept any more tokens.
+            rejected.add(node);
+            return;
+        }
+
+        const term = sequence[node.termIndex];
+        if (term.type === 'terminal') {
+            if (term.terminal !== token) {
+                rejected.add(node);
+                return null;
+            }
+            node.termIndex += 1;
+            node.tokenIndex += 1;
+        } else {
+            for (const child of node.childNodes!) {
+                recurse(child);
+            }
+            node.childNodes = node.childNodes!.filter((child) => !rejected.has(child));
+            if (node.childNodes.length <= 0) {
+                rejected.add(node);
+            }
+        }
+    }
+
+    for (const node of nodes) {
+        recurse(node);
+    }
+
+    return nodes.filter((node) => !rejected.has(node));
+}
+
+function stepNonTerminals(node: RuleNode[]): RuleNode[] {
     const sequence = grammar[node.nonTerminal][node.sequenceIndex];
 
     if (node.termIndex >= sequence.length) {
         // Sequence has run out of symbols and cannot accept any more tokens.
-        return null;
+        return node;
     }
 
     const term = sequence[node.termIndex];
     if (term.type === 'terminal') {
-        return {
-            ...node,
-            termIndex: node.termIndex + 1
-        };
-    } else {
-        let childNodes: RuleNode[];
-        if (node.childNodes) {
-            childNodes = node.childNodes;
-        } else {
-            childNodes = grammar[term.name].map<RuleNode>((sequence, index) => {
-                return {
-                    nonTerminal: term.name,
-                    sequenceIndex: index,
-                    termIndex: 0,
-                    tokenIndex: node.tokenIndex,
-                    childNodes: null
-                };
-            });
-        }
-
-        for (const child of childNodes) {
-            const sequence = grammar[child.nonTerminal][child.sequenceIndex];
-            if (child.termIndex >= sequence.length) {
-                
-            }
-        }
+        return node;
     }
+
+    let childNodes: RuleNode[];
+    if (node.childNodes === null) {
+        childNodes = grammar[term.name].map<RuleNode>((sequence, index) => {
+            return {
+                nonTerminal: term.name,
+                sequenceIndex: index,
+                termIndex: 0,
+                tokenIndex: node.tokenIndex,
+                childNodes: null
+            };
+        });
+    } else {
+        childNodes = node.childNodes;
+    }
+
+    childNodes = childNodes.map(stepNonTerminals);
+    return {
+        ...node,
+        childNodes
+    };
 }
 
-function acceptToken(nodes: RuleNode[], token: string): RuleNode[] {
+function step(node: RuleNode, token: string): RuleNode | null {
+    let nextNode: RuleNode | null = node;
+    nextNode = stepNonTerminals(nextNode);
+    nextNode = stepTerminals(nextNode, token);
+    return nextNode;
+}
 
+function areRuleNodesEqual(ruleNodeA: RuleNode, ruleNodeB: RuleNode) {
+    return ruleNodeA.nonTerminal === ruleNodeB.nonTerminal
+        && ruleNodeA.sequenceIndex === ruleNodeB.sequenceIndex
+        && ruleNodeA.termIndex === ruleNodeB.termIndex
+        && ruleNodeA.tokenIndex === ruleNodeB.tokenIndex;
+}
+
+function deduplicate(nodes: RuleNode[]): RuleNode[] {
+    const nodeList: RuleNode[] = [];
+
+    function dedupe(node: RuleNode): RuleNode {
+        const found = nodeList.find((nodeB) => areRuleNodesEqual(node, nodeB));
+        if (found) {
+            return found;
+        }
+        if (node.childNodes === null) {
+            return node;
+        }
+        node = {
+            ...node,
+            childNodes: node.childNodes.map(dedupe)
+        };
+        nodeList.push(node);
+        return node;
+    }
+
+    return nodes.map(dedupe);
+}
+
+function stepNodes(nodes: RuleNode[], token: string): RuleNode[] {
+    let nextNodes = nodes
+        .map((node) => step(node, token))
+        .filter(isNonNullable);
+    nextNodes = deduplicate(nextNodes);
+    return nextNodes;
 }
 
 let currentRootNodes = initialRootNodes;
@@ -102,17 +181,29 @@ console.log('--- first rule tree ---');
 console.log(Dot.toDot(grammar, currentRootNodes));
 
 console.log('--- second rule tree ---');
-currentRootNodes = acceptToken(currentRootNodes, 'a');
+currentRootNodes = stepNodes(currentRootNodes, 'a');
 console.log(Dot.toDot(grammar, currentRootNodes));
 
 console.log('--- third rule tree ---');
-currentRootNodes = acceptToken(currentRootNodes, '*');
+currentRootNodes = stepNodes(currentRootNodes, '*');
 console.log(Dot.toDot(grammar, currentRootNodes));
 
 console.log('--- fourth rule tree ---');
-currentRootNodes = acceptToken(currentRootNodes, 'a');
+currentRootNodes = stepNodes(currentRootNodes, 'a');
 console.log(Dot.toDot(grammar, currentRootNodes));
 
 console.log('--- fifth rule tree ---');
-currentRootNodes = acceptToken(currentRootNodes, '-');
+currentRootNodes = stepNodes(currentRootNodes, '-');
+console.log(Dot.toDot(grammar, currentRootNodes));
+
+console.log('--- sixth rule tree ---');
+currentRootNodes = stepNodes(currentRootNodes, 'a');
+console.log(Dot.toDot(grammar, currentRootNodes));
+
+console.log('--- seventh rule tree ---');
+currentRootNodes = stepNodes(currentRootNodes, '*');
+console.log(Dot.toDot(grammar, currentRootNodes));
+
+console.log('--- eigth rule tree ---');
+currentRootNodes = stepNodes(currentRootNodes, 'a');
 console.log(Dot.toDot(grammar, currentRootNodes));
