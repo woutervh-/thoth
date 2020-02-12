@@ -45,7 +45,7 @@ const initialRootNodes = grammar[startSymbol].map((sequence, index): RuleNode =>
         sequenceIndex: index,
         termIndex: 0,
         tokenIndex: 0,
-        childNodes: null
+        children: null
     };
 });
 
@@ -65,17 +65,17 @@ function expandTerminalRules(nodes: RuleNode[], token: string): RuleNode[] {
                     sequenceIndex: node.sequenceIndex,
                     termIndex: node.termIndex + 1,
                     tokenIndex: node.tokenIndex,
-                    childNodes: null
+                    children: null
                 });
             }
         } else {
-            if (node.childNodes !== null) {
+            if (node.children !== null) {
                 nextNodes.push({
                     nonTerminal: node.nonTerminal,
                     sequenceIndex: node.sequenceIndex,
                     termIndex: node.termIndex,
                     tokenIndex: node.tokenIndex,
-                    childNodes: expandTerminalRules(node.childNodes, token)
+                    children: expandTerminalRules(node.children, token)
                 });
             }
         }
@@ -101,18 +101,18 @@ function expandNonTerminalRules(nodes: RuleNode[]): RuleNode[] {
 
         const sequences = grammar[term.name];
         let childNodes: RuleNode[];
-        if (node.childNodes === null) {
+        if (node.children === null) {
             childNodes = sequences.map((sequence, index): RuleNode => {
                 return {
                     nonTerminal: term.name,
                     sequenceIndex: index,
                     termIndex: 0,
                     tokenIndex: node.tokenIndex + 1,
-                    childNodes: null,
+                    children: null,
                 };
             });
         } else {
-            childNodes = node.childNodes;
+            childNodes = node.children;
         }
 
         nextNodes.push({
@@ -120,7 +120,7 @@ function expandNonTerminalRules(nodes: RuleNode[]): RuleNode[] {
             sequenceIndex: node.sequenceIndex,
             termIndex: node.termIndex,
             tokenIndex: node.tokenIndex,
-            childNodes: expandNonTerminalRules(childNodes)
+            children: expandNonTerminalRules(childNodes)
         });
     }
 
@@ -143,12 +143,12 @@ function deduplicateNodes(nodes: RuleNode[]): RuleNode[] {
             return found;
         }
         nodeList.push(node);
-        if (node.childNodes === null) {
+        if (node.children === null) {
             return node;
         }
         return {
             ...node,
-            childNodes: node.childNodes.map(dedupe)
+            children: node.children.map(dedupe)
         };
     }
 

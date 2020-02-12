@@ -1,8 +1,32 @@
+import * as DAG from './dag';
 import { RuleNode } from './rule-node';
 import { Printer } from '../../grammar/printer';
 import { Grammar } from '../../grammar/grammar';
 
 export class Dot {
+    public static dagToDot<T>(grammar: Grammar<T>, dag: DAG.DAG) {
+        const nodeMap: Map<DAG.Node, RuleNode> = new Map();
+        
+        function recurse(node: DAG.Node): RuleNode {
+            if (nodeMap.has(node)) {
+                return nodeMap.get(node)!;
+            }
+            const ruleNode: RuleNode = {
+                ...node,
+                children: dag.getChildren(node).map(recurse)
+            };
+            nodeMap.set(node, ruleNode);
+            return ruleNode;
+        }
+
+        for (const node of dag.nodes) {
+            recurse(node);
+        }
+
+        const nodes = [...nodeMap.values()];
+        return Dot.toDot(grammar, nodes);
+    }
+
     public static toDot<T>(grammar: Grammar<T>, rootNodes: RuleNode[]) {
         const dotHeader: string[] = [
             'digraph G {',
@@ -24,8 +48,8 @@ export class Dot {
                     continue;
                 }
                 seen.add(node);
-                if (node.childNodes) {
-                    for (const child of node.childNodes) {
+                if (node.children) {
+                    for (const child of node.children) {
                         if (!nameMap.has(child)) {
                             queue.push(child);
                         }
@@ -46,8 +70,8 @@ export class Dot {
                     continue;
                 }
                 seen.add(node);
-                if (node.childNodes) {
-                    for (const child of node.childNodes) {
+                if (node.children) {
+                    for (const child of node.children) {
                         transitions.push(`${nameMap.get(node)!} -> ${nameMap.get(child)!};`);
                         queue.push(child);
                     }

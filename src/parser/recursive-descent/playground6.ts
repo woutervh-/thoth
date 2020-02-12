@@ -72,11 +72,11 @@ function stepTerminals(nodes: RuleNode[], token: string): RuleNode[] {
             node.termIndex += 1;
             node.tokenIndex += 1;
         } else {
-            for (const child of node.childNodes!) {
+            for (const child of node.children!) {
                 recurse(child);
             }
-            node.childNodes = node.childNodes!.filter((child) => !rejecting.has(child));
-            if (node.childNodes.length <= 0) {
+            node.children = node.children!.filter((child) => !rejecting.has(child));
+            if (node.children.length <= 0) {
                 rejecting.add(node);
             }
         }
@@ -108,19 +108,19 @@ function stepNonTerminals(nodes: RuleNode[]) {
             return;
         }
 
-        if (node.childNodes === null) {
-            node.childNodes = grammar[term.name].map<RuleNode>((sequence, index) => {
+        if (node.children === null) {
+            node.children = grammar[term.name].map<RuleNode>((sequence, index) => {
                 return {
                     nonTerminal: term.name,
                     sequenceIndex: index,
                     termIndex: 0,
                     tokenIndex: node.tokenIndex,
-                    childNodes: null
+                    children: null
                 };
             });
         }
 
-        for (const child of node.childNodes) {
+        for (const child of node.children) {
             recurse(child);
         }
     }
@@ -146,10 +146,10 @@ function deduplicate(nodes: RuleNode[]): RuleNode[] {
             return found;
         }
         nodeList.push(node);
-        if (node.childNodes === null) {
+        if (node.children === null) {
             return node;
         }
-        node.childNodes = node.childNodes.map(recurse);
+        node.children = node.children.map(recurse);
         return node;
     }
 
@@ -169,7 +169,7 @@ const initialRootNodes = grammar[startSymbol].map((sequence, index): RuleNode =>
         sequenceIndex: index,
         termIndex: 0,
         tokenIndex: 0,
-        childNodes: null
+        children: null
     };
 });
 let currentRootNodes = initialRootNodes;

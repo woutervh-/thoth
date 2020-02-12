@@ -3,5 +3,5 @@ export interface RuleNode {
     sequenceIndex: number;
     termIndex: number;
     tokenIndex: number;
-    childNodes: RuleNode[] | null;
+    children: RuleNode[] | null;
 }
