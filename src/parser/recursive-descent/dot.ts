@@ -6,14 +6,15 @@ import { Grammar } from '../../grammar/grammar';
 export class Dot {
     public static dagToDot<T>(grammar: Grammar<T>, dag: DAG.DAG) {
         const nodeMap: Map<DAG.Node, RuleNode> = new Map();
-        
+
         function recurse(node: DAG.Node): RuleNode {
             if (nodeMap.has(node)) {
                 return nodeMap.get(node)!;
             }
+            const children = dag.getChildren(node);
             const ruleNode: RuleNode = {
                 ...node,
-                children: dag.getChildren(node).map(recurse)
+                children: children ? children.map(recurse) : null
             };
             nodeMap.set(node, ruleNode);
             return ruleNode;

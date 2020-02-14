@@ -17,29 +17,39 @@ export class DAG {
     private children: Map<Node, Node[]> = new Map();
     private parents: Map<Node, Node[]> = new Map();
 
-    public getChildren(node: Node): Node[] {
+    public getRootNodes(): Node[] {
+        return this.nodes.filter((node) => !this.children.has(node));
+    }
+
+    public hasChildren(node: Node) {
+        return this.children.has(node);
+    }
+
+    public hasParents(node: Node) {
+        return this.parents.has(node);
+    }
+
+    public getChildren(node: Node): Node[] | null {
         if (!this.nodes.includes(node)) {
             throw new Error('Node does not exist.');
         }
-        if (this.children.has(node)) {
-            return this.children.get(node)!;
-        } else {
-            return [];
+        if (!this.children.has(node)) {
+            return null;
         }
+        return this.children.get(node)!.slice();
     }
 
-    public getParents(node: Node): Node[] {
+    public getParents(node: Node): Node[] | null {
         if (!this.nodes.includes(node)) {
             throw new Error('Node does not exist.');
         }
-        if (this.parents.has(node)) {
-            return this.parents.get(node)!;
-        } else {
-            return [];
+        if (!this.parents.has(node)) {
+            return null;
         }
+        return this.parents.get(node)!.slice();
     }
 
-    public addParent(child: Node, parent: Node) {
+    public setParent(child: Node, parent: Node) {
         if (!this.nodes.includes(child)) {
             throw new Error('Child node does not exist.');
         }
@@ -60,11 +70,11 @@ export class DAG {
         }
     }
 
-    public addChild(parent: Node, child: Node) {
-        this.addParent(child, parent);
+    public setChild(parent: Node, child: Node) {
+        this.setParent(child, parent);
     }
 
-    public removeParent(child: Node, parent: Node) {
+    public unsetParent(child: Node, parent: Node) {
         if (!this.nodes.includes(child)) {
             throw new Error('Child node does not exist.');
         }
@@ -97,8 +107,8 @@ export class DAG {
         }
     }
 
-    public removeChild(parent: Node, child: Node) {
-        this.removeParent(child, parent);
+    public unsetChild(parent: Node, child: Node) {
+        this.unsetParent(child, parent);
     }
 
     public removeNode(node: Node) {
@@ -111,6 +121,26 @@ export class DAG {
         const index = this.nodes.indexOf(node);
         if (index <= -1) {
             throw new Error('Node does not exist.');
+        }
+        this.nodes.splice(index, 1);
+    }
+
+    public destroyNode(node: Node) {
+        const index = this.nodes.indexOf(node);
+        if (index <= -1) {
+            throw new Error('Node does not exist.');
+        }
+        const parents = this.getParents(node);
+        if (parents) {
+            for (const parent of parents) {
+                this.unsetParent(node, parent);
+            }
+        }
+        const children = this.getChildren(node);
+        if (children) {
+            for (const child of children) {
+                this.unsetParent(child, node);
+            }
         }
         this.nodes.splice(index, 1);
     }
