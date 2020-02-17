@@ -1,34 +1,9 @@
 import * as DAG from './dag';
-import { RuleNode } from './rule-node';
 import { Printer } from '../../grammar/printer';
 import { Grammar } from '../../grammar/grammar';
 
 export class Dot {
-    public static dagToDot<T>(grammar: Grammar<T>, dag: DAG.DAG) {
-        const nodeMap: Map<DAG.Node, RuleNode> = new Map();
-
-        function recurse(node: DAG.Node): RuleNode {
-            if (nodeMap.has(node)) {
-                return nodeMap.get(node)!;
-            }
-            const children = dag.getChildren(node);
-            const ruleNode: RuleNode = {
-                ...node,
-                children: children ? children.map(recurse) : null
-            };
-            nodeMap.set(node, ruleNode);
-            return ruleNode;
-        }
-
-        for (const node of dag.nodes) {
-            recurse(node);
-        }
-
-        const nodes = [...nodeMap.values()];
-        return Dot.toDot(grammar, nodes);
-    }
-
-    public static toDot<T>(grammar: Grammar<T>, rootNodes: RuleNode[]) {
+    public static toDot<T>(grammar: Grammar<T>, dag: DAG.DAG) {
         const dotHeader: string[] = [
             'digraph G {',
             'ratio = fill;',
@@ -39,18 +14,19 @@ export class Dot {
             '}'
         ];
 
-        const nameMap: Map<RuleNode, string> = new Map();
+        const nameMap: Map<DAG.Node, string> = new Map();
         {
-            const seen = new Set<RuleNode>();
-            const queue = rootNodes.slice();
+            const seen = new Set<DAG.Node>();
+            const queue = dag.getRootNodes();
             while (queue.length >= 1) {
                 const node = queue.pop()!;
                 if (seen.has(node)) {
                     continue;
                 }
                 seen.add(node);
-                if (node.children) {
-                    for (const child of node.children) {
+                const children = dag.getChildren(node);
+                if (children) {
+                    for (const child of children) {
                         if (!nameMap.has(child)) {
                             queue.push(child);
                         }
@@ -63,16 +39,17 @@ export class Dot {
         const nodes: string[] = [];
         const transitions: string[] = [];
         {
-            const seen = new Set<RuleNode>();
-            const queue = rootNodes.slice();
+            const seen = new Set<DAG.Node>();
+            const queue = dag.getRootNodes();
             while (queue.length >= 1) {
                 const node = queue.pop()!;
                 if (seen.has(node)) {
                     continue;
                 }
                 seen.add(node);
-                if (node.children) {
-                    for (const child of node.children) {
+                const children = dag.getChildren(node);
+                if (children) {
+                    for (const child of children) {
                         transitions.push(`${nameMap.get(node)!} -> ${nameMap.get(child)!};`);
                         queue.push(child);
                     }
@@ -84,7 +61,7 @@ export class Dot {
                 } else {
                     color = 'white';
                 }
-                nodes.push(`${nameMap.get(node)!} [fillcolor="${color}", label="(${node.tokenIndex}; ${node.nonTerminal} &rarr; ${label})"];`);
+                nodes.push(`${nameMap.get(node)!} [fillcolor="${color}", label="${node.startIndex}-${node.endIndex} ${node.nonTerminal} &rarr; ${label}"];`);
             }
         }
 

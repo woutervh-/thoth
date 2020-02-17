@@ -44,7 +44,8 @@ const initialRootNodes = grammar[startSymbol].map((sequence, index): DAG.Node =>
         nonTerminal: startSymbol,
         sequenceIndex: index,
         termIndex: 0,
-        tokenIndex: 0
+        startIndex: 0,
+        endIndex: 0
     };
 });
 const dag = new DAG.DAG();
@@ -52,28 +53,31 @@ for (const node of initialRootNodes) {
     dag.addNode(node);
 }
 
-function dfsWalk(action: (node: DAG.Node) => void, order: 'pre' | 'post') {
+function topDownWalk(action: (node: DAG.Node) => void, order: 'pre' | 'post') {
     const seen = new Set<DAG.Node>();
-    const remaining = dag.getRootNodes();
-    while (remaining.length >= 1) {
-        const node = remaining.pop()!;
+
+    function recurse(node: DAG.Node) {
         if (seen.has(node)) {
-            continue;
+            return;
         }
         seen.add(node);
-
         if (order === 'pre') {
             action(node);
         }
-
         const children = dag.getChildren(node);
         if (children) {
-            remaining.push(...children);
+            for (const child of children) {
+                recurse(child);
+            }
         }
-
         if (order === 'post') {
             action(node);
         }
+    }
+
+    const roots = dag.getRootNodes();
+    for (const root of roots) {
+        recurse(root);
     }
 }
 
@@ -97,15 +101,10 @@ const expandNonTerminal = (node: DAG.Node) => {
             nonTerminal: term.name,
             sequenceIndex: index,
             termIndex: 0,
-            tokenIndex: node.tokenIndex
+            startIndex: node.endIndex,
+            endIndex: node.endIndex
         };
-        const existing = dag.findNode(child);
-        if (existing) {
-            return existing;
-        } else {
-            dag.addNode(child);
-            return child;
-        }
+        return dag.addOrFind(child);
     });
 
     for (const child of children) {
@@ -122,59 +121,73 @@ const acceptToken = (token: string) => (node: DAG.Node) => {
 
     const term = sequence[node.termIndex];
     if (term.type !== 'terminal') {
+        const children = dag.getChildren(node);
+        if (!children) {
+            dag.destroyNode(node);
+        }
         return;
     }
 
-    if (term.terminal === token) {
-        node.termIndex += 1;
-        node.tokenIndex += 1;
+    if (term.terminal !== token) {
+        dag.destroyNode(node);
         return;
     }
 
-    dag.destroyNode(node);
+    node.termIndex += 1;
+    node.endIndex += 1;
 };
 
 const splitCompleted = (node: DAG.Node) => {
-    const sequence = grammar[node.nonTerminal][node.sequenceIndex];
-    if (node.termIndex < sequence.length) {
+    const children = dag.getChildren(node);
+    if (!children) {
         return;
     }
 
-    // TODO: split parents
-    // One of them will remain as is.
-    // The other will increase term index (by 1) + token index (by node.termIndex/node.tokenIndex/...?)
-    // Split can happen multiple times (from multiple children).
+    const parents = dag.getParents(node);
+    for (const child of children) {
+        const sequence = grammar[child.nonTerminal][child.sequenceIndex];
+        if (child.termIndex < sequence.length) {
+            continue;
+        }
+
+        const clone: DAG.Node = dag.addOrFind({
+            nonTerminal: node.nonTerminal,
+            sequenceIndex: node.sequenceIndex,
+            termIndex: node.termIndex + 1,
+            startIndex: node.startIndex,
+            endIndex: child.endIndex
+        });
+
+        if (parents) {
+            for (const parent of parents) {
+                dag.setChild(parent, clone);
+            }
+        }
+    }
 };
 
+function step(token: string) {
+    topDownWalk(expandNonTerminal, 'pre');
+    topDownWalk(acceptToken(token), 'post')
+    topDownWalk(splitCompleted, 'pre');
+}
+
 console.log('--- initial DAG ---');
-console.log(Dot.dagToDot(grammar, dag));
+console.log(Dot.toDot(grammar, dag));
 
 // -------------------------------
 
-dfsWalk(expandNonTerminal, 'pre');
+const tokens = 'a*a-a*a'.split('');
+for (const token of tokens) {
+    step(token);
+    console.log('--- next DAG ---');
+    console.log(Dot.toDot(grammar, dag));
+}
+
+topDownWalk(expandNonTerminal, 'pre');
 console.log('--- next DAG ---');
-console.log(Dot.dagToDot(grammar, dag));
+console.log(Dot.toDot(grammar, dag));
 
-dfsWalk(acceptToken('a'), 'post');
+topDownWalk(acceptToken(';'), 'post');
 console.log('--- next DAG ---');
-console.log(Dot.dagToDot(grammar, dag));
-
-dfsWalk(splitCompleted, 'post');
-console.log('--- next DAG ---');
-console.log(Dot.dagToDot(grammar, dag));
-
-// // -------------------------------
-
-// dfsWalk(expandNonTerminal, 'pre');
-// console.log('--- next DAG ---');
-// console.log(Dot.dagToDot(grammar, dag));
-
-// dfsWalk(acceptToken(';'), 'post');
-// console.log('--- next DAG ---');
-// console.log(Dot.dagToDot(grammar, dag));
-
-// // TODO: split parents of accepting nodes
-// console.log('--- next DAG ---');
-// console.log(Dot.dagToDot(grammar, dag));
-
-// // -------------------------------
+console.log(Dot.toDot(grammar, dag));

@@ -2,14 +2,16 @@ export interface Node {
     nonTerminal: string;
     sequenceIndex: number;
     termIndex: number;
-    tokenIndex: number;
+    startIndex: number;
+    endIndex: number;
 }
 
 function areNodesEqual(nodeA: Node, nodeB: Node) {
     return nodeA.nonTerminal === nodeB.nonTerminal
         && nodeA.sequenceIndex === nodeB.sequenceIndex
         && nodeA.termIndex === nodeB.termIndex
-        && nodeA.tokenIndex === nodeB.tokenIndex;
+        && nodeA.startIndex === nodeB.startIndex
+        && nodeA.endIndex === nodeB.endIndex;
 }
 
 export class DAG {
@@ -18,6 +20,10 @@ export class DAG {
     private parents: Map<Node, Node[]> = new Map();
 
     public getRootNodes(): Node[] {
+        return this.nodes.filter((node) => !this.parents.has(node));
+    }
+
+    public getLeafNodes(): Node[] {
         return this.nodes.filter((node) => !this.children.has(node));
     }
 
@@ -158,6 +164,16 @@ export class DAG {
         const found = this.findNode(node);
         if (!found) {
             this.nodes.push(node);
+        }
+    }
+
+    public addOrFind(node: Node): Node {
+        const found = this.findNode(node);
+        if (found) {
+            return found;
+        } else {
+            this.addNode(node);
+            return node;
         }
     }
 }
