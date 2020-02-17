@@ -1,3 +1,4 @@
+import * as perf_hooks from 'perf_hooks';
 import { Grammar } from '../../grammar/grammar';
 import { Minimizer } from '../../grammar/minimizer';
 import { Printer } from '../../grammar/printer';
@@ -169,7 +170,7 @@ const splitCompleted = (node: DAG.Node) => {
 function step(token: string) {
     topDownWalk(expandNonTerminal, 'pre');
     topDownWalk(acceptToken(token), 'post')
-    topDownWalk(splitCompleted, 'pre');
+    topDownWalk(splitCompleted, 'post');
 }
 
 console.log('--- initial DAG ---');
@@ -177,17 +178,13 @@ console.log(Dot.toDot(grammar, dag));
 
 // -------------------------------
 
-const tokens = 'a*a-a*a'.split('');
+const start = perf_hooks.performance.now();
+const tokens = 'a*a-a*a;'.split('');
 for (const token of tokens) {
     step(token);
     console.log('--- next DAG ---');
     console.log(Dot.toDot(grammar, dag));
 }
+const end = perf_hooks.performance.now();
 
-topDownWalk(expandNonTerminal, 'pre');
-console.log('--- next DAG ---');
-console.log(Dot.toDot(grammar, dag));
-
-topDownWalk(acceptToken(';'), 'post');
-console.log('--- next DAG ---');
-console.log(Dot.toDot(grammar, dag));
+console.log(`Took ${end - start} ms.`);
