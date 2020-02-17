@@ -1,10 +1,4 @@
-export interface Node {
-    nonTerminal: string;
-    sequenceIndex: number;
-    termIndex: number;
-    startIndex: number;
-    endIndex: number;
-}
+import { Node } from './node';
 
 function areNodesEqual(nodeA: Node, nodeB: Node) {
     return nodeA.nonTerminal === nodeB.nonTerminal

@@ -57,8 +57,9 @@ const initialRootNodes = grammar[startSymbol].map((sequence, index): DAG.Node =>
     };
 });
 const dag = new DAG.DAG();
+const completedDag = new DAG.DAG();
 for (const node of initialRootNodes) {
-    dag.addNode(node);
+    dag.addOrFind(node);
 }
 
 function topDownWalk(action: (node: DAG.Node) => void, order: 'pre' | 'post') {
@@ -163,7 +164,9 @@ const splitCompleted = (node: DAG.Node) => {
             endIndex: child.endIndex
         });
 
-        // TODO: add "completed edge" from parent to child
+        const n1 = completedDag.addOrFind(clone);
+        const n2 = completedDag.addOrFind(child);
+        completedDag.setChild(n1, n2);
 
         if (parents) {
             for (const parent of parents) {
@@ -173,47 +176,18 @@ const splitCompleted = (node: DAG.Node) => {
     }
 };
 
+function step(token: string) {
+    topDownWalk(expandNonTerminal, 'pre');
+    topDownWalk(acceptToken(token), 'post');
+    topDownWalk(splitCompleted, 'post');
+}
+
 console.log('--- initial DAG ---');
-console.log(Dot.toDot(grammar, dag));
+console.log(Dot.toDot(grammar, dag, completedDag));
 
-// -------------------------------
-
-topDownWalk(expandNonTerminal, 'pre');
-console.log('--- next DAG ---');
-console.log(Dot.toDot(grammar, dag));
-
-topDownWalk(acceptToken('a'), 'post');
-console.log('--- next DAG ---');
-console.log(Dot.toDot(grammar, dag));
-
-topDownWalk(splitCompleted, 'post');
-console.log('--- next DAG ---');
-console.log(Dot.toDot(grammar, dag));
-
-// -------------------------------
-
-topDownWalk(expandNonTerminal, 'pre');
-console.log('--- next DAG ---');
-console.log(Dot.toDot(grammar, dag));
-
-topDownWalk(acceptToken('+'), 'post');
-console.log('--- next DAG ---');
-console.log(Dot.toDot(grammar, dag));
-
-topDownWalk(splitCompleted, 'post');
-console.log('--- next DAG ---');
-console.log(Dot.toDot(grammar, dag));
-
-// -------------------------------
-
-topDownWalk(expandNonTerminal, 'pre');
-console.log('--- next DAG ---');
-console.log(Dot.toDot(grammar, dag));
-
-topDownWalk(acceptToken('a'), 'post');
-console.log('--- next DAG ---');
-console.log(Dot.toDot(grammar, dag));
-
-topDownWalk(splitCompleted, 'post');
-console.log('--- next DAG ---');
-console.log(Dot.toDot(grammar, dag));
+const tokens = 'a+a+a'.split('');
+for (const token of tokens) {
+    step(token);
+    console.log('--- next DAG ---');
+    console.log(Dot.toDot(grammar, dag, completedDag));
+}

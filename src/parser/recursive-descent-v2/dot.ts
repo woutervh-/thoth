@@ -1,9 +1,10 @@
-import * as DAG from './dag';
+import { DAG } from './dag';
+import { Node } from './node';
 import { Printer } from '../../grammar/printer';
 import { Grammar } from '../../grammar/grammar';
 
 export class Dot {
-    public static toDot<T>(grammar: Grammar<T>, dag: DAG.DAG, additionalEdges: DAG.DAG) {
+    public static toDot<T>(grammar: Grammar<T>, dag: DAG) {
         const dotHeader: string[] = [
             'digraph G {',
             'ratio = fill;',
@@ -14,9 +15,9 @@ export class Dot {
             '}'
         ];
 
-        const nameMap: Map<DAG.Node, string> = new Map();
+        const nameMap: Map<Node, string> = new Map();
         {
-            const seen = new Set<DAG.Node>();
+            const seen = new Set<Node>();
             const queue = dag.getRootNodes();
             while (queue.length >= 1) {
                 const node = queue.pop()!;
@@ -39,7 +40,7 @@ export class Dot {
         const nodes: string[] = [];
         const edges: string[] = [];
         {
-            const seen = new Set<DAG.Node>();
+            const seen = new Set<Node>();
             const queue = dag.getRootNodes();
             while (queue.length >= 1) {
                 const node = queue.pop()!;
@@ -62,28 +63,6 @@ export class Dot {
                     color = 'white';
                 }
                 nodes.push(`${nameMap.get(node)!} [fillcolor="${color}", label="${node.startIndex}-${node.endIndex} ${node.nonTerminal} &rarr; ${label}"];`);
-            }
-        }
-
-        {
-            const seen = new Set<DAG.Node>();
-            const queue = dag.getRootNodes();
-            while (queue.length >= 1) {
-                const node = queue.pop()!;
-                if (seen.has(node)) {
-                    continue;
-                }
-                seen.add(node);
-                if (!additionalEdges.hasNode(node)) {
-                    continue;
-                }
-                const children = additionalEdges.getChildren(node);
-                if (children) {
-                    for (const child of children) {
-                        edges.push(`${nameMap.get(node)!} -> ${nameMap.get(child)!} [constraint=false, color="red"];`);
-                        queue.push(child);
-                    }
-                }
             }
         }
 
