@@ -1,4 +1,3 @@
-import * as perf_hooks from 'perf_hooks';
 import { Grammar } from '../../grammar/grammar';
 import { Minimizer } from '../../grammar/minimizer';
 import { Printer } from '../../grammar/printer';
@@ -124,14 +123,12 @@ const expandNonTerminal = (node: DAG.Node) => {
 const acceptToken = (token: string) => (node: DAG.Node) => {
     const sequence = grammar[node.nonTerminal][node.sequenceIndex];
     if (node.termIndex >= sequence.length) {
-        // dag.destroyNode(node);
         return;
     }
 
     const term = sequence[node.termIndex];
     if (term.type === 'terminal') {
         if (term.terminal !== token) {
-            dag.destroyNode(node);
             return;
         }
         node.termIndex += 1;
@@ -139,7 +136,6 @@ const acceptToken = (token: string) => (node: DAG.Node) => {
     } else {
         const children = dag.getChildren(node);
         if (!children) {
-            dag.destroyNode(node);
             return;
         }
         node.endIndex += 1;
@@ -167,6 +163,8 @@ const splitCompleted = (node: DAG.Node) => {
             endIndex: child.endIndex
         });
 
+        // TODO: add "completed edge" from parent to child
+
         if (parents) {
             for (const parent of parents) {
                 dag.setChild(parent, clone);
@@ -175,24 +173,47 @@ const splitCompleted = (node: DAG.Node) => {
     }
 };
 
-function step(token: string) {
-    topDownWalk(expandNonTerminal, 'pre');
-    topDownWalk(acceptToken(token), 'post');
-    topDownWalk(splitCompleted, 'post');
-}
-
 console.log('--- initial DAG ---');
 console.log(Dot.toDot(grammar, dag));
 
 // -------------------------------
 
-const start = perf_hooks.performance.now();
-const tokens = 'a+a+a'.split('');
-for (const token of tokens) {
-    step(token);
-    console.log('--- next DAG ---');
-    console.log(Dot.toDot(grammar, dag));
-}
-const end = perf_hooks.performance.now();
+topDownWalk(expandNonTerminal, 'pre');
+console.log('--- next DAG ---');
+console.log(Dot.toDot(grammar, dag));
 
-console.log(`Took ${end - start} ms.`);
+topDownWalk(acceptToken('a'), 'post');
+console.log('--- next DAG ---');
+console.log(Dot.toDot(grammar, dag));
+
+topDownWalk(splitCompleted, 'post');
+console.log('--- next DAG ---');
+console.log(Dot.toDot(grammar, dag));
+
+// -------------------------------
+
+topDownWalk(expandNonTerminal, 'pre');
+console.log('--- next DAG ---');
+console.log(Dot.toDot(grammar, dag));
+
+topDownWalk(acceptToken('+'), 'post');
+console.log('--- next DAG ---');
+console.log(Dot.toDot(grammar, dag));
+
+topDownWalk(splitCompleted, 'post');
+console.log('--- next DAG ---');
+console.log(Dot.toDot(grammar, dag));
+
+// -------------------------------
+
+topDownWalk(expandNonTerminal, 'pre');
+console.log('--- next DAG ---');
+console.log(Dot.toDot(grammar, dag));
+
+topDownWalk(acceptToken('a'), 'post');
+console.log('--- next DAG ---');
+console.log(Dot.toDot(grammar, dag));
+
+topDownWalk(splitCompleted, 'post');
+console.log('--- next DAG ---');
+console.log(Dot.toDot(grammar, dag));
