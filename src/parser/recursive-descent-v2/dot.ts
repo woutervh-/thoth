@@ -62,7 +62,8 @@ export class Dot {
                 } else {
                     color = 'white';
                 }
-                nodes.push(`${nameMap.get(node)!} [fillcolor="${color}", label="${node.startIndex}-${node.endIndex} ${node.nonTerminal} &rarr; ${label}"];`);
+                // nodes.push(`${nameMap.get(node)!} [fillcolor="${color}", label="${node.startIndex}-${node.endIndex} ${node.nonTerminal} &rarr; ${label}"];`);
+                nodes.push(`${nameMap.get(node)!} [fillcolor="${color}", label="${node.startIndex} ${node.nonTerminal} &rarr; ${label}"];`);
             }
         }
 

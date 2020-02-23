@@ -1,11 +1,12 @@
 import { Node } from './node';
 
 function areNodesEqual(nodeA: Node, nodeB: Node) {
-    return nodeA.nonTerminal === nodeB.nonTerminal
+    return nodeA === nodeB
+        || nodeA.nonTerminal === nodeB.nonTerminal
         && nodeA.sequenceIndex === nodeB.sequenceIndex
         && nodeA.termIndex === nodeB.termIndex
-        && nodeA.startIndex === nodeB.startIndex
-        && nodeA.endIndex === nodeB.endIndex;
+        && nodeA.startIndex === nodeB.startIndex;
+    // && nodeA.endIndex === nodeB.endIndex;
 }
 
 export class DAG {
