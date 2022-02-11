@@ -360,7 +360,7 @@ const grammar = sequence(
 
 const [_, fsm] = toFSM(grammar);
 const dfa = toNumberState(toDeterministic(fsm));
-// TODO: remove unreachable states
+// TODO: remove deadlocks (state from which no final state is reachable)
 const min = toNumberState(toMinimal(dfa));
 const dot = toDot(min);
 
