@@ -1,8 +1,8 @@
-// import { Deterministic } from '../grammar/deterministic';
-import { Grammar, Term } from '../../grammar/grammar';
-import { Minimizer } from '../../grammar/minimizer';
-import { Printer } from '../../grammar/printer';
-import { Recursion } from '../../grammar/recursion';
+// import { Deterministic } from "../grammar/deterministic";
+import { Grammar, Term } from "../../grammar/grammar";
+import { Minimizer } from "../../grammar/minimizer";
+import { Printer } from "../../grammar/printer";
+import { Recursion } from "../../grammar/recursion";
 
 interface Rule {
     sequence: Term<string>[];
@@ -17,35 +17,35 @@ function printRuleSet(ruleSet: Rule[]) {
 
 let grammar: Grammar<string> = {
     E: [
-        [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '^' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'terminal', terminal: '-' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '*' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '-' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'terminal', terminal: 'a' }]
+        [{ type: "non-terminal", name: "E" }, { type: "terminal", terminal: "^" }, { type: "non-terminal", name: "E" }],
+        [{ type: "terminal", terminal: "-" }, { type: "non-terminal", name: "E" }],
+        [{ type: "non-terminal", name: "E" }, { type: "terminal", terminal: "*" }, { type: "non-terminal", name: "E" }],
+        [{ type: "non-terminal", name: "E" }, { type: "terminal", terminal: "-" }, { type: "non-terminal", name: "E" }],
+        [{ type: "terminal", terminal: "a" }]
     ]
 };
 
-console.log('--- original ---');
+console.log("--- original ---");
 Printer.printGrammar(grammar);
 
 grammar = Recursion.removeAllLeftRecursion(grammar);
-console.log('--- removed left-recursion ---');
+console.log("--- removed left-recursion ---");
 Printer.printGrammar(grammar);
 
 // grammar = Deterministic.leftFactor(grammar);
-// console.log('--- left-factored ---');
+// console.log("--- left-factored ---");
 // Printer.printGrammar(grammar);
 
 grammar = Minimizer.removeEmptyRules(grammar);
-console.log('--- remove empty non-terminals ---');
+console.log("--- remove empty non-terminals ---");
 Printer.printGrammar(grammar);
 
 grammar = Minimizer.substituteSimpleNonTerminals(grammar);
-console.log('--- substitute simple non-terminals ---');
+console.log("--- substitute simple non-terminals ---");
 Printer.printGrammar(grammar);
 
-grammar = Minimizer.removeUnreachables(grammar, ['E']);
-console.log('--- remove unreachables ---');
+grammar = Minimizer.removeUnreachables(grammar, ["E"]);
+console.log("--- remove unreachables ---");
 Printer.printGrammar(grammar);
 
 function removeTerminatedRules(ruleSet: Rule[]): Rule[] {
@@ -62,7 +62,7 @@ function expandTerminalRules(ruleSet: Rule[], token: string): Rule[] {
     const nextRuleSet: Rule[] = [];
     for (const rule of ruleSet) {
         const term = rule.sequence[rule.termIndex];
-        if (term.type === 'terminal') {
+        if (term.type === "terminal") {
             if (term.terminal === token) {
                 nextRuleSet.push({ sequence: rule.sequence, termIndex: rule.termIndex + 1 });
             }
@@ -80,7 +80,7 @@ function expandNonTerminalRules(ruleSet: Rule[]): Rule[] {
             continue;
         }
         const term = rule.sequence[rule.termIndex];
-        if (term.type === 'terminal') {
+        if (term.type === "terminal") {
             terminalRules.push(rule);
             continue;
         }
@@ -106,10 +106,10 @@ function areRulesEqual(ruleA: Rule, ruleB: Rule): boolean {
     for (let i = 0; i < ruleA.sequence.length; i++) {
         const termA = ruleA.sequence[i];
         const termB = ruleB.sequence[i];
-        if (termA.type === 'terminal' && termB.type === 'terminal' && termA.terminal === termB.terminal) {
+        if (termA.type === "terminal" && termB.type === "terminal" && termA.terminal === termB.terminal) {
             continue;
         }
-        if (termA.type === 'non-terminal' && termB.type === 'non-terminal' && termA.name === termB.name) {
+        if (termA.type === "non-terminal" && termB.type === "non-terminal" && termA.name === termB.name) {
             continue;
         }
         return false;
@@ -136,7 +136,7 @@ function nextRuleSet(ruleSet: Rule[], token: string): Rule[] {
     return nextRuleSet;
 }
 
-const startSymbol = 'E';
+const startSymbol = "E";
 const initialRuleSet = grammar[startSymbol].map((sequence): Rule => {
     return {
         sequence,
@@ -145,21 +145,21 @@ const initialRuleSet = grammar[startSymbol].map((sequence): Rule => {
 });
 let currentRuleSet = expandNonTerminalRules(initialRuleSet);
 
-console.log('--- first rule set ---');
+console.log("--- first rule set ---");
 printRuleSet(currentRuleSet);
 
-console.log('--- second rule set ---');
-currentRuleSet = nextRuleSet(currentRuleSet, 'a');
+console.log("--- second rule set ---");
+currentRuleSet = nextRuleSet(currentRuleSet, "a");
 printRuleSet(currentRuleSet);
 
-console.log('--- third rule set ---');
-currentRuleSet = nextRuleSet(currentRuleSet, '*');
+console.log("--- third rule set ---");
+currentRuleSet = nextRuleSet(currentRuleSet, "*");
 printRuleSet(currentRuleSet);
 
-console.log('--- fourth rule set ---');
-currentRuleSet = nextRuleSet(currentRuleSet, 'a');
+console.log("--- fourth rule set ---");
+currentRuleSet = nextRuleSet(currentRuleSet, "a");
 printRuleSet(currentRuleSet);
 
-console.log('--- fifth rule set ---');
-currentRuleSet = nextRuleSet(currentRuleSet, '-');
+console.log("--- fifth rule set ---");
+currentRuleSet = nextRuleSet(currentRuleSet, "-");
 printRuleSet(currentRuleSet);

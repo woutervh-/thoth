@@ -1,36 +1,36 @@
-import { Grammar } from '../../grammar/grammar';
-import { Minimizer } from '../../grammar/minimizer';
-import { Printer } from '../../grammar/printer';
-import { Recursion } from '../../grammar/recursion';
-import { Node } from './node';
-import { Dot } from './dot';
-import { DAG } from './dag';
+import { Grammar } from "../../grammar/grammar";
+import { Minimizer } from "../../grammar/minimizer";
+import { Printer } from "../../grammar/printer";
+import { Recursion } from "../../grammar/recursion";
+import { Node } from "./node";
+import { Dot } from "./dot";
+import { DAG } from "./dag";
 
 let grammar: Grammar<string> = {
     E: [
-        [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '+' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'terminal', terminal: 'a' }]
+        [{ type: "non-terminal", name: "E" }, { type: "terminal", terminal: "+" }, { type: "non-terminal", name: "E" }],
+        [{ type: "terminal", terminal: "a" }]
     ]
 };
-const startSymbol = 'E';
+const startSymbol = "E";
 
-console.log('--- original ---');
+console.log("--- original ---");
 Printer.printGrammar(grammar);
 
 grammar = Recursion.removeAllLeftRecursion(grammar);
-console.log('--- removed left-recursion ---');
+console.log("--- removed left-recursion ---");
 Printer.printGrammar(grammar);
 
 grammar = Minimizer.removeEmptyRules(grammar);
-console.log('--- remove empty non-terminals ---');
+console.log("--- remove empty non-terminals ---");
 Printer.printGrammar(grammar);
 
 grammar = Minimizer.substituteSimpleNonTerminals(grammar);
-console.log('--- substitute simple non-terminals ---');
+console.log("--- substitute simple non-terminals ---");
 Printer.printGrammar(grammar);
 
 grammar = Minimizer.removeUnreachables(grammar, [startSymbol]);
-console.log('--- remove unreachables ---');
+console.log("--- remove unreachables ---");
 Printer.printGrammar(grammar);
 
 const initialNodes = grammar[startSymbol].map((sequence, index): Node => {
@@ -52,7 +52,7 @@ function addIfNotExists(nodes: Node[], node: Node) {
         return node.nonTerminal === nodeB.nonTerminal
             && node.sequenceIndex === nodeB.sequenceIndex
             && node.termIndex === nodeB.termIndex
-            && node.startIndex === nodeB.startIndex
+            && node.startIndex === nodeB.startIndex;
     });
     if (!found) {
         nodes.push(node);
@@ -68,7 +68,7 @@ function step(states: Node[][], token: string, tokenIndex: number) {
         const sequence = grammar[node.nonTerminal][node.sequenceIndex];
         if (node.termIndex < sequence.length) {
             const term = sequence[node.termIndex];
-            if (term.type === 'terminal') {
+            if (term.type === "terminal") {
                 if (term.terminal === token) {
                     const newNode: Node = {
                         ...node,
@@ -109,7 +109,7 @@ function step(states: Node[][], token: string, tokenIndex: number) {
                 const previousSequence = grammar[previousNode.nonTerminal][previousNode.sequenceIndex];
                 if (previousNode.termIndex < previousSequence.length) {
                     const previousTerm = previousSequence[previousNode.termIndex];
-                    if (previousTerm.type === 'non-terminal' && previousTerm.name === node.nonTerminal) {
+                    if (previousTerm.type === "non-terminal" && previousTerm.name === node.nonTerminal) {
                         const completedNode: Node = {
                             ...previousNode,
                             termIndex: previousNode.termIndex + 1
@@ -136,19 +136,19 @@ function printState(nodes: Node[]) {
 
 function printStates(states: Node[][]) {
     for (const nodes of states) {
-        console.log('--- next states ---');
+        console.log("--- next states ---");
         printState(nodes);
     }
 }
 
 const states = [initialNodes];
-step(states, 'a', 0);
-step(states, '+', 1);
-step(states, 'a', 2);
-step(states, '+', 3);
-step(states, 'a', 4);
+step(states, "a", 0);
+step(states, "+", 1);
+step(states, "a", 2);
+step(states, "+", 3);
+step(states, "a", 4);
 
 printStates(states);
 
-console.log('--- state dag ---');
+console.log("--- state dag ---");
 console.log(Dot.toDot(grammar, dag));

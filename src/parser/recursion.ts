@@ -1,5 +1,5 @@
-import { Grammar, Term } from './grammar';
-import { SequenceUtil } from './sequence-util';
+import { Grammar, Term } from "./grammar";
+import { SequenceUtil } from "./sequence-util";
 
 export class Recursion {
     public static hasDirectLeftRecursion(nonTerminal: string, sequences: Term<unknown>[][]) {
@@ -14,10 +14,10 @@ export class Recursion {
             if (SequenceUtil.sequenceStartsWithNonTerminal(sequence, oldNonTerminal)) {
                 const [, ...rest] = sequence;
                 newSequencesB.push(rest);
-                newSequencesB.push([...rest, { type: 'non-terminal', name: newNonTerminal }]);
+                newSequencesB.push([...rest, { type: "non-terminal", name: newNonTerminal }]);
             } else {
                 newSequencesA.push(sequence);
-                newSequencesA.push([...sequence, { type: 'non-terminal', name: newNonTerminal }]);
+                newSequencesA.push([...sequence, { type: "non-terminal", name: newNonTerminal }]);
             }
         }
 
@@ -46,7 +46,7 @@ export class Recursion {
                     }
                 }
             }
-            const newNonTerminal = `${oldNonTerminal}'`;
+            const newNonTerminal = `${oldNonTerminal}"`;
             const [sequencesA, sequencesB] = Recursion.removeDirectLeftRecursion(oldNonTerminal, newNonTerminal, [...newAlternativesA]);
             newGrammar[oldNonTerminal] = sequencesA;
             newGrammar[newNonTerminal] = sequencesB;

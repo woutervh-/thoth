@@ -1,47 +1,47 @@
-import { Grammar } from '../../grammar/grammar';
-import { Minimizer } from '../../grammar/minimizer';
-import { Printer } from '../../grammar/printer';
-import { Recursion } from '../../grammar/recursion';
-import { RuleNode } from './rule-node';
-import { Dot } from './dot';
+import { Grammar } from "../../grammar/grammar";
+import { Minimizer } from "../../grammar/minimizer";
+import { Printer } from "../../grammar/printer";
+import { Recursion } from "../../grammar/recursion";
+import { RuleNode } from "./rule-node";
+import { Dot } from "./dot";
 
 let grammar: Grammar<string> = {
     S: [
-        [{ type: 'non-terminal', name: 'S' }, { type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: ';' }],
+        [{ type: "non-terminal", name: "S" }, { type: "non-terminal", name: "E" }, { type: "terminal", terminal: ";" }],
         []
     ],
     E: [
-        [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '^' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'terminal', terminal: '-' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '*' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '-' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'terminal', terminal: 'a' }]
+        [{ type: "non-terminal", name: "E" }, { type: "terminal", terminal: "^" }, { type: "non-terminal", name: "E" }],
+        [{ type: "terminal", terminal: "-" }, { type: "non-terminal", name: "E" }],
+        [{ type: "non-terminal", name: "E" }, { type: "terminal", terminal: "*" }, { type: "non-terminal", name: "E" }],
+        [{ type: "non-terminal", name: "E" }, { type: "terminal", terminal: "-" }, { type: "non-terminal", name: "E" }],
+        [{ type: "terminal", terminal: "a" }]
     ]
 };
-const startSymbol = 'S';
+const startSymbol = "S";
 
-console.log('--- original ---');
+console.log("--- original ---");
 Printer.printGrammar(grammar);
 
 grammar = Recursion.removeAllLeftRecursion(grammar);
-console.log('--- removed left-recursion ---');
+console.log("--- removed left-recursion ---");
 Printer.printGrammar(grammar);
 
 // grammar = Deterministic.leftFactor(grammar);
-// console.log('--- left-factored ---');
+// console.log("--- left-factored ---");
 // Printer.printGrammar(grammar);
 
 grammar = Minimizer.removeEmptyRules(grammar);
-console.log('--- remove empty non-terminals ---');
+console.log("--- remove empty non-terminals ---");
 Printer.printGrammar(grammar);
 
 grammar = Minimizer.substituteSimpleNonTerminals(grammar);
-console.log('--- substitute simple non-terminals ---');
+console.log("--- substitute simple non-terminals ---");
 Printer.printGrammar(grammar);
 
-// grammar = Minimizer.removeUnreachables(grammar, ['E']);
+// grammar = Minimizer.removeUnreachables(grammar, ["E"]);
 grammar = Minimizer.removeUnreachables(grammar, [startSymbol]);
-console.log('--- remove unreachables ---');
+console.log("--- remove unreachables ---");
 Printer.printGrammar(grammar);
 
 function stepTerminals(nodes: RuleNode[], token: string): RuleNode[] {
@@ -64,7 +64,7 @@ function stepTerminals(nodes: RuleNode[], token: string): RuleNode[] {
         }
 
         const term = sequence[node.termIndex];
-        if (term.type === 'terminal') {
+        if (term.type === "terminal") {
             if (term.terminal !== token) {
                 rejecting.add(node);
                 return null;
@@ -104,7 +104,7 @@ function stepNonTerminals(nodes: RuleNode[]) {
         }
 
         const term = sequence[node.termIndex];
-        if (term.type === 'terminal') {
+        if (term.type === "terminal") {
             return;
         }
 
@@ -174,12 +174,12 @@ const initialRootNodes = grammar[startSymbol].map((sequence, index): RuleNode =>
 });
 let currentRootNodes = initialRootNodes;
 
-console.log('--- initial forest ---');
+console.log("--- initial forest ---");
 console.log(Dot.toDot(grammar, currentRootNodes));
 
-const tokens = 'a*a-a*a;'.split('');
+const tokens = "a*a-a*a;".split("");
 for (const token of tokens) {
     currentRootNodes = stepNodes(currentRootNodes, token);
-    console.log('--- next rule forest ---');
+    console.log("--- next rule forest ---");
     console.log(Dot.toDot(grammar, currentRootNodes));
 }

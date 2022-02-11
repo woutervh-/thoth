@@ -1,4 +1,4 @@
-import { PushDownAutomaton } from './pushdown-automaton';
+import { PushDownAutomaton } from "./pushdown-automaton";
 
 export function run<S, T, U>(automaton: PushDownAutomaton<S, T, U>, input: T[]): boolean {
     const stack: U[] = [];
@@ -13,7 +13,7 @@ export function run<S, T, U>(automaton: PushDownAutomaton<S, T, U>, input: T[]):
             && transition[2] === top
         );
         if (transitions.length >= 2) {
-            throw new Error('Encountered underterministic choice.');
+            throw new Error("Encountered underterministic choice.");
         }
         if (transitions.length !== 1) {
             return false;

@@ -1,30 +1,30 @@
 // tslint:disable:max-classes-per-file
 
-import { PushDownAutomaton } from './pushdown-automaton';
+import { PushDownAutomaton } from "./pushdown-automaton";
 
 interface EmptyBuilder {
-    type: 'empty';
+    type: "empty";
 }
 
 interface TerminalBuilder<T> {
-    type: 'terminal';
+    type: "terminal";
     action: T;
 }
 
 interface SuccessionBuilder<T> {
-    type: 'succession';
+    type: "succession";
     first: Builder<T>;
     second: Builder<T>;
 }
 
 interface NamedBuilder<T> {
-    type: 'named';
+    type: "named";
     name: string;
     builder: Builder<T>;
 }
 
 interface ReferenceBuilder {
-    type: 'reference';
+    type: "reference";
     name: string;
 }
 
@@ -45,23 +45,23 @@ interface BuildStep<T> {
 
 export class Builder<T> {
     public static empty<T>() {
-        return new Builder<T>({ type: 'empty' });
+        return new Builder<T>({ type: "empty" });
     }
 
     public static terminal<T>(action: T) {
-        return new Builder<T>({ type: 'terminal', action });
+        return new Builder<T>({ type: "terminal", action });
     }
 
     public static succession<T>(first: Builder<T>, second: Builder<T>) {
-        return new Builder<T>({ type: 'succession', first, second });
+        return new Builder<T>({ type: "succession", first, second });
     }
 
     public static named<T>(name: string, builder: Builder<T>) {
-        return new Builder<T>({ type: 'named', name, builder });
+        return new Builder<T>({ type: "named", name, builder });
     }
 
     public static reference<T>(name: string) {
-        return new Builder<T>({ type: 'reference', name });
+        return new Builder<T>({ type: "reference", name });
     }
 
     private static buildEmptyInternal<T>(): BuildStep<T> {
@@ -148,24 +148,24 @@ export class Builder<T> {
         }
         const builderInternal = names.get(internal.name)!;
         switch (builderInternal.type) {
-            case 'empty':
+            case "empty":
                 return Builder.buildEmptyInternal();
-            case 'terminal':
+            case "terminal":
                 return Builder.buildTerminalInternal(builderInternal);
         }
     }
 
     private static buildInternal<T>(internal: InternalBuilder<T>, names: Map<string, InternalBuilder<T>>): BuildStep<T> {
         switch (internal.type) {
-            case 'empty':
+            case "empty":
                 return Builder.buildEmptyInternal();
-            case 'terminal':
+            case "terminal":
                 return Builder.buildTerminalInternal(internal);
-            case 'succession':
+            case "succession":
                 return Builder.buildSuccessionInternal(internal, names);
-            case 'named':
+            case "named":
                 return Builder.buildInternalNamed(internal, names);
-            case 'reference':
+            case "reference":
                 return Builder.buildInternalReference(internal, names);
         }
     }

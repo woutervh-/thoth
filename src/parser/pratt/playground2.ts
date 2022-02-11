@@ -1,36 +1,36 @@
 interface PrefixOperator {
-    type: 'prefix';
+    type: "prefix";
     token: string;
     precedence: number;
 }
 
 interface InfixOperator {
-    type: 'infix';
+    type: "infix";
     token: string;
     precedence: number;
-    associativity: 'left' | 'right';
+    associativity: "left" | "right";
 }
 
 interface PostfixOperator {
-    type: 'postfix';
+    type: "postfix";
     token: string;
     precedence: number;
 }
 
 interface StatementOperator {
-    type: 'statement';
+    type: "statement";
     token: string;
     precedence: number;
 }
 
 interface BracketOperator {
-    type: 'bracket';
+    type: "bracket";
     openToken: string;
     closeToken: string;
 }
 
 interface NullaryOperator {
-    type: 'nullary';
+    type: "nullary";
     token: string;
 }
 
@@ -38,71 +38,71 @@ type Operator = PrefixOperator | InfixOperator | PostfixOperator | StatementOper
 
 // A -> a B
 const prefixOperators: PrefixOperator[] = [
-    { type: 'prefix', token: '+', precedence: 80 },
-    { type: 'prefix', token: '-', precedence: 80 }
+    { type: "prefix", token: "+", precedence: 80 },
+    { type: "prefix", token: "-", precedence: 80 }
 ];
 
 // A -> B (a B)*
 const infixOperators: InfixOperator[] = [
-    { type: 'infix', token: '=', precedence: 10, associativity: 'right' },
-    { type: 'infix', token: '+', precedence: 20, associativity: 'left' },
-    { type: 'infix', token: '-', precedence: 20, associativity: 'left' },
-    { type: 'infix', token: '*', precedence: 30, associativity: 'left' },
-    { type: 'infix', token: '/', precedence: 30, associativity: 'left' },
-    { type: 'infix', token: '^', precedence: 40, associativity: 'right' }
+    { type: "infix", token: "=", precedence: 10, associativity: "right" },
+    { type: "infix", token: "+", precedence: 20, associativity: "left" },
+    { type: "infix", token: "-", precedence: 20, associativity: "left" },
+    { type: "infix", token: "*", precedence: 30, associativity: "left" },
+    { type: "infix", token: "/", precedence: 30, associativity: "left" },
+    { type: "infix", token: "^", precedence: 40, associativity: "right" }
 ];
 
 // A -> B a
 const postfixOperators: PostfixOperator[] = [
-    { type: 'postfix', token: '++', precedence: 90 }
+    { type: "postfix", token: "++", precedence: 90 }
 ];
 
 // A -> (B a)*
 const statementOperators: StatementOperator[] = [
-    { type: 'statement', token: ';', precedence: 5 }
+    { type: "statement", token: ";", precedence: 5 }
 ];
 
 // A -> a B a
 const bracketOperators: BracketOperator[] = [
-    { type: 'bracket', openToken: '(', closeToken: ')' },
-    { type: 'bracket', openToken: '{', closeToken: '}' }
+    { type: "bracket", openToken: "(", closeToken: ")" },
+    { type: "bracket", openToken: "{", closeToken: "}" }
 ];
 
 // A -> a
 const nullaries: NullaryOperator[] = [
-    { type: 'nullary', token: '0' },
-    { type: 'nullary', token: '1' },
-    { type: 'nullary', token: '2' },
-    { type: 'nullary', token: '3' },
-    { type: 'nullary', token: '4' },
-    { type: 'nullary', token: '5' },
-    { type: 'nullary', token: '6' },
-    { type: 'nullary', token: '7' },
-    { type: 'nullary', token: '8' },
-    { type: 'nullary', token: '9' },
-    { type: 'nullary', token: 'a' },
-    { type: 'nullary', token: 'b' }
+    { type: "nullary", token: "0" },
+    { type: "nullary", token: "1" },
+    { type: "nullary", token: "2" },
+    { type: "nullary", token: "3" },
+    { type: "nullary", token: "4" },
+    { type: "nullary", token: "5" },
+    { type: "nullary", token: "6" },
+    { type: "nullary", token: "7" },
+    { type: "nullary", token: "8" },
+    { type: "nullary", token: "9" },
+    { type: "nullary", token: "a" },
+    { type: "nullary", token: "b" }
 ];
 
 interface NullaryNode {
-    type: 'nullary';
+    type: "nullary";
     operator: NullaryOperator;
 }
 
 interface UnaryNode {
-    type: 'unary';
+    type: "unary";
     operator: PrefixOperator | PostfixOperator | StatementOperator | BracketOperator;
     child: Node;
 }
 
 interface VariadicNode {
-    type: 'variadic';
+    type: "variadic";
     operators: (InfixOperator | PostfixOperator | StatementOperator)[];
     children: Node[];
 }
 
 // interface BinaryNode {
-//     type: 'binary';
+//     type: "binary";
 //     operator: InfixOperator | StatementOperator;
 //     left: Node;
 //     right: Node;
@@ -124,16 +124,16 @@ function getPrecendence(token: string) {
 }
 
 let index = -1;
-const input = '{a=5+3*2;b=7-1;}'.split('');
-// const input = '(-5)+2;3*1;'.split('');
-// const input = ['5', '++', '(', '6'];
-// const input = '2^3^2'.split('');
-// const input = '-(2+3)*5'.split('');
-// const input = '+2++3*-(-4)'.split('');
+const input = "{a=5+3*2;b=7-1;}".split("");
+// const input = "(-5)+2;3*1;".split("");
+// const input = ["5", "++", "(", "6"];
+// const input = "2^3^2".split("");
+// const input = "-(2+3)*5".split("");
+// const input = "+2++3*-(-4)".split("");
 
 // class TokenStream {
 //     private queue: string[] = [];
-//     private consumerQueue: { type: 'peek' | 'pop', consume: (token: string) => void }[] = [];
+//     private consumerQueue: { type: "peek" | "pop", consume: (token: string) => void }[] = [];
 
 //     public push(token: string) {
 //         this.queue.push(token);
@@ -163,12 +163,12 @@ function parse(precedence: number): Node {
         throw new Error();
     }
     let node: Node;
-    if (operator.type === 'prefix') {
-        node = { type: 'unary', operator, child: parse(operator.precedence) };
-    } else if (operator.type === 'nullary') {
-        node = { type: 'nullary', operator };
+    if (operator.type === "prefix") {
+        node = { type: "unary", operator, child: parse(operator.precedence) };
+    } else if (operator.type === "nullary") {
+        node = { type: "nullary", operator };
     } else {
-        node = { type: 'unary', operator, child: parse(0) };
+        node = { type: "unary", operator, child: parse(0) };
         if (input[++index] !== operator.closeToken) {
             throw new Error();
         }
@@ -182,32 +182,32 @@ function parse(precedence: number): Node {
         if (operator === undefined) {
             throw new Error();
         }
-        if (operator.type === 'infix' || operator.type === 'statement') {
-            if (node.type !== 'variadic') {
-                node = { type: 'variadic', operators: [], children: [node] };
+        if (operator.type === "infix" || operator.type === "statement") {
+            if (node.type !== "variadic") {
+                node = { type: "variadic", operators: [], children: [node] };
             }
             if (index < input.length - 1) {
-                const associativity = operator.type === 'infix' && operator.associativity === 'left' ? 0 : -1;
+                const associativity = operator.type === "infix" && operator.associativity === "left" ? 0 : -1;
                 node.operators.push(operator);
                 node.children.push(parse(operator.precedence + associativity));
-            } else if (operator.type === 'statement') {
-                node = { type: 'unary', operator, child: node };
+            } else if (operator.type === "statement") {
+                node = { type: "unary", operator, child: node };
             } else {
                 throw new Error();
             }
         } else {
-            node = { type: 'unary', operator, child: node };
+            node = { type: "unary", operator, child: node };
         }
     }
     return node;
 }
 
 function toDotNode(node: Node, lines: string[], context: { counter: number }): number {
-    if (node.type === 'nullary') {
+    if (node.type === "nullary") {
         lines.push(`N${context.counter} [label="${node.operator.token}"]`);
-    } else if (node.type === 'unary') {
+    } else if (node.type === "unary") {
         const child = toDotNode(node.child, lines, context);
-        if (node.operator.type === 'prefix' || node.operator.type === 'postfix' || node.operator.type === 'statement') {
+        if (node.operator.type === "prefix" || node.operator.type === "postfix" || node.operator.type === "statement") {
             lines.push(`N${context.counter} [label="${node.operator.token}"]`);
             lines.push(`N${context.counter} -> N${child}`);
         } else {
@@ -216,7 +216,7 @@ function toDotNode(node: Node, lines: string[], context: { counter: number }): n
         }
     } else {
         const children = node.children.map((child) => toDotNode(child, lines, context));
-        lines.push(`N${context.counter} [label="${node.operators.join(' ')}"]`);
+        lines.push(`N${context.counter} [label="${node.operators.join(" ")}"]`);
         lines.push(`N${context.counter} -> N${left}`);
         lines.push(`N${context.counter} -> N${right}`);
     }
@@ -225,25 +225,25 @@ function toDotNode(node: Node, lines: string[], context: { counter: number }): n
 
 function toDot(node: Node) {
     const lines: string[] = [];
-    lines.push('digraph G {');
-    lines.push('graph [ordering="out"];');
+    lines.push("digraph G {");
+    lines.push("graph [ordering=\"out\"];");
     toDotNode(node, lines, { counter: 0 });
-    lines.push('}');
-    return lines.join('\n');
+    lines.push("}");
+    return lines.join("\n");
 }
 
 // // tslint:disable-next-line:max-classes-per-file
 // class Expression {
 //     private static getValue(node: Node): number {
-//         if (node.type === 'binary') {
-//             if (node.operator.token === '*') {
+//         if (node.type === "binary") {
+//             if (node.operator.token === "*") {
 //                 return Expression.getValue(node.left) * Expression.getValue(node.right);
-//             } else if (node.operator.token === '+') {
+//             } else if (node.operator.token === "+") {
 //                 return Expression.getValue(node.left) + Expression.getValue(node.right);
 //             } else {
 //                 throw new Error();
 //             }
-//         } else if (node.type === 'nullary') {
+//         } else if (node.type === "nullary") {
 //             return parseInt(node.operator.token, 10);
 //         } else {
 //             throw new Error();
@@ -261,10 +261,10 @@ function toDot(node: Node) {
 // class Module {
 //     private static getStatements(node: Node): Expression[] {
 //         const statements: Expression[] = [];
-//         if (node.operator.type === 'postfix' && node.operator.token === ';') {
-//             if (node.type === 'unary') {
+//         if (node.operator.type === "postfix" && node.operator.token === ";") {
+//             if (node.type === "unary") {
 //                 statements.push(...Module.getStatements(node.child));
-//             } else if (node.type === 'binary') {
+//             } else if (node.type === "binary") {
 //                 statements.push(...Module.getStatements(node.left));
 //                 statements.push(...Module.getStatements(node.right));
 //             }

@@ -1,47 +1,47 @@
-// import { Deterministic } from '../grammar/deterministic';
-import { Grammar } from '../grammar/grammar';
-import { Minimizer } from '../grammar/minimizer';
-import { Printer } from '../grammar/printer';
-import { Recursion } from '../grammar/recursion';
+// import { Deterministic } from "../grammar/deterministic";
+import { Grammar } from "../grammar/grammar";
+import { Minimizer } from "../grammar/minimizer";
+import { Printer } from "../grammar/printer";
+import { Recursion } from "../grammar/recursion";
 
 let grammar: Grammar<string> = {
     A: [
-        [{ type: 'non-terminal', name: 'C' }, { type: 'terminal', terminal: 'd' }]
+        [{ type: "non-terminal", name: "C" }, { type: "terminal", terminal: "d" }]
     ],
     B: [
-        [{ type: 'non-terminal', name: 'C' }, { type: 'terminal', terminal: 'e' }]
+        [{ type: "non-terminal", name: "C" }, { type: "terminal", terminal: "e" }]
     ],
     C: [
-        [{ type: 'non-terminal', name: 'A' }],
-        [{ type: 'non-terminal', name: 'B' }],
-        [{ type: 'terminal', terminal: 'f' }]
+        [{ type: "non-terminal", name: "A" }],
+        [{ type: "non-terminal", name: "B" }],
+        [{ type: "terminal", terminal: "f" }]
     ],
     S: [
-        [{ type: 'non-terminal', name: 'S' }, { type: 'terminal', terminal: 'q' }]
+        [{ type: "non-terminal", name: "S" }, { type: "terminal", terminal: "q" }]
     ]
 };
 
-console.log('--- original ---');
+console.log("--- original ---");
 Printer.printGrammar(grammar);
 
 grammar = Recursion.removeAllLeftRecursion(grammar);
-console.log('--- removed left-recursion ---');
+console.log("--- removed left-recursion ---");
 Printer.printGrammar(grammar);
 
 // grammar = Deterministic.leftFactor(grammar);
-// console.log('--- left-factored ---');
+// console.log("--- left-factored ---");
 // Printer.printGrammar(grammar);
 
 grammar = Minimizer.removeEmptyRules(grammar);
-console.log('--- remove empty non-terminals ---');
+console.log("--- remove empty non-terminals ---");
 Printer.printGrammar(grammar);
 
 grammar = Minimizer.substituteSimpleNonTerminals(grammar);
-console.log('--- substitute simple non-terminals ---');
+console.log("--- substitute simple non-terminals ---");
 Printer.printGrammar(grammar);
 
-grammar = Minimizer.removeUnreachables(grammar, ['A', 'B']);
-console.log('--- remove unreachables ---');
+grammar = Minimizer.removeUnreachables(grammar, ["A", "B"]);
+console.log("--- remove unreachables ---");
 Printer.printGrammar(grammar);
 
 // interface Tree<T> {
@@ -55,7 +55,7 @@ function acceptNonTerminal(input: string[], inputIndex: 0, nonTerminal: string) 
         let accepted = 0;
         let index = inputIndex;
         for (const term of sequence) {
-            if (term.type === 'terminal') {
+            if (term.type === "terminal") {
                 if (input[index] === term.terminal) {
                     accepted += 1;
                     index += 1;
@@ -83,4 +83,4 @@ function acceptNonTerminal(input: string[], inputIndex: 0, nonTerminal: string) 
     return -1;
 }
 
-console.log(acceptNonTerminal(['f', 'e', 'd'], 0, 'A'));
+console.log(acceptNonTerminal(["f", "e", "d"], 0, "A"));

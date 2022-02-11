@@ -1,14 +1,14 @@
-import { Accepter } from './accepters/accepter';
+import { Accepter } from "./accepters/accepter";
 
 interface Matchedtoken<T> {
-    type: 'matched';
+    type: "matched";
     accepter: Accepter<T>;
     position: number;
     inputs: T[];
 }
 
 interface ErrorToken<T> {
-    type: 'error';
+    type: "error";
     position: number;
     input: T | undefined;
 }

@@ -1,10 +1,10 @@
-import { Builder as FiniteStateMachineBuiler } from '../finite-state-machine/builder';
-import { Deterministic } from '../finite-state-machine/deterministic';
-import { Dot } from '../finite-state-machine/dot';
-import { FiniteStateMachine } from '../finite-state-machine/finite-state-machine';
-import { Minimizer } from '../finite-state-machine/minimizer';
-import { Numberfier } from '../finite-state-machine/numberfier';
-import { PushDownAutomaton } from './pushdown-automaton';
+import { Builder as FiniteStateMachineBuiler } from "../finite-state-machine/builder";
+import { Deterministic } from "../finite-state-machine/deterministic";
+import { Dot } from "../finite-state-machine/dot";
+import { FiniteStateMachine } from "../finite-state-machine/finite-state-machine";
+import { Minimizer } from "../finite-state-machine/minimizer";
+import { Numberfier } from "../finite-state-machine/numberfier";
+import { PushDownAutomaton } from "./pushdown-automaton";
 
 class Action<T, U> {
     public readonly input: T;
@@ -72,36 +72,36 @@ const pda: PushDownAutomaton<number, string, string> = {
     acceptingStates: [1],
     initialState: 0,
     transitions: [
-        [0, 'a', null, ['A'], 0],
-        [0, 'a', 'A', ['A', 'A'], 0],
-        [0, 'b', 'A', [], 1],
-        [1, 'b', 'A', [], 1]
+        [0, "a", null, ["A"], 0],
+        [0, "a", "A", ["A", "A"], 0],
+        [0, "b", "A", [], 1],
+        [1, "b", "A", [], 1]
     ]
 };
 
 interface Rule<T> {
-    type: 'rule';
+    type: "rule";
     name: string;
     step: BuildStep<T>;
 }
 
 interface Reference {
-    type: 'reference';
+    type: "reference";
     name: string;
 }
 
 interface Terminal<T> {
-    type: 'terminal';
+    type: "terminal";
     input: T;
 }
 
 interface Sequence<T> {
-    type: 'sequence';
+    type: "sequence";
     steps: BuildStep<T>[];
 }
 
 interface Alternatives<T> {
-    type: 'alternatives';
+    type: "alternatives";
     steps: BuildStep<T>[];
 }
 
@@ -110,19 +110,19 @@ type BuildStep<T> = Terminal<T> | Rule<T> | Sequence<T> | Alternatives<T> | Refe
 // tslint:disable-next-line:max-classes-per-file
 class StepBuilder {
     public static terminal<T>(input: T): Terminal<T> {
-        return { type: 'terminal', input };
+        return { type: "terminal", input };
     }
 
     public static reference(name: string): Reference {
-        return { type: 'reference', name };
+        return { type: "reference", name };
     }
 
     public static sequence<T>(steps: BuildStep<T>[]): Sequence<T> {
-        return { type: 'sequence', steps };
+        return { type: "sequence", steps };
     }
 
     public static alternatives<T>(steps: BuildStep<T>[]): Alternatives<T> {
-        return { type: 'alternatives', steps };
+        return { type: "alternatives", steps };
     }
 }
 
@@ -140,7 +140,7 @@ class Builder<T> {
         if (buildStep === undefined) {
             throw new Error(`Rule ${startingRule} is not defined.`);
         }
-        if (buildStep.type === 'alternatives') {
+        if (buildStep.type === "alternatives") {
             FiniteStateMachineBuiler.alternatives()
         }
     }
@@ -152,18 +152,18 @@ class Builder<T> {
 // https://en.wikipedia.org/wiki/Greibach_normal_form
 
 new Builder<string>()
-    .rule('S', StepBuilder.sequence([
-        StepBuilder.terminal('a'),
-        StepBuilder.reference('C'),
-        StepBuilder.terminal('b')
+    .rule("S", StepBuilder.sequence([
+        StepBuilder.terminal("a"),
+        StepBuilder.reference("C"),
+        StepBuilder.terminal("b")
     ]))
-    .rule('C', StepBuilder.terminal('c'));
+    .rule("C", StepBuilder.terminal("c"));
 
 const fsm = Numberfier.convertStateToNumbers(Minimizer.removeDeadlocks(Minimizer.minimize(Deterministic.deterministic(convertToFiniteStateMachine(pda)))));
 
 const dot = new Dot(
     (state: number) => `S${state}`,
-    (action: Action<string, string>) => `${action.input};${action.stackIn === null ? 'ε' : action.stackIn}/${action.stackOut.length >= 1 ? action.stackOut.join(',') : 'ε'}`
+    (action: Action<string, string>) => `${action.input};${action.stackIn === null ? "ε" : action.stackIn}/${action.stackOut.length >= 1 ? action.stackOut.join(",") : "ε"}`
 ).toDot(fsm);
 
 console.log(dot);
