@@ -1,31 +1,31 @@
 export interface Reference {
-    type: 'reference';
+    type: "reference";
     name: string;
 }
 
 export interface Empty {
-    type: 'empty';
+    type: "empty";
 }
 
 export interface Terminal<T> {
-    type: 'terminal';
+    type: "terminal";
     input: T;
 }
 
 export interface Sequence<T> {
-    type: 'sequence';
+    type: "sequence";
     steps: Step<T>[];
 }
 
 export interface Repeat<T> {
-    type: 'repeat';
+    type: "repeat";
     min: number;
     max: number;
     step: Step<T>;
 }
 
 export interface Alternatives<T> {
-    type: 'alternatives';
+    type: "alternatives";
     steps: Step<T>[];
 }
 

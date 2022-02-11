@@ -1,8 +1,8 @@
-import { FiniteStateMachine } from './finite-state-machine';
+import { FiniteStateMachine } from "./finite-state-machine";
 
 export class Numberfier {
     public static convertStateToNumbers<S, T>(fsm: FiniteStateMachine<S, T>): FiniteStateMachine<number, T> {
-        let counter: number = 0;
+        let counter = 0;
         const states: Set<S> = new Set([
             fsm.initialState,
             ...fsm.transitions.map((transition) => transition[0]),

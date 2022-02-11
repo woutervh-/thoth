@@ -1,17 +1,17 @@
 interface NonTerminal {
-    type: 'non-terminal';
+    type: "non-terminal";
     name: string;
 }
 
 interface Terminal<T> {
-    type: 'terminal';
+    type: "terminal";
     terminal: T;
 }
 
 type Term<T> = NonTerminal | Terminal<T>;
 
 interface Alternative<T> {
-    associativity?: 'left' | 'right';
+    associativity?: "left" | "right";
     sequence: Term<T>[];
 }
 

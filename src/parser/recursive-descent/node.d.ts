@@ -4,25 +4,25 @@ export interface Span {
 }
 
 export interface Empty {
-    type: 'empty';
+    type: "empty";
     span: Span;
 }
 
 export interface TerminalNode<T> {
-    type: 'terminal';
+    type: "terminal";
     terminal: T;
     span: Span;
 }
 
 export interface PreRuleNode<T> {
-    type: 'rule';
+    type: "rule";
     name: string;
     span: Span;
     children: PreNode<T>[];
 }
 
 export interface SequenceNode<T> {
-    type: 'sequence';
+    type: "sequence";
     span: Span;
     children: PreNode<T>[];
 }
@@ -30,7 +30,7 @@ export interface SequenceNode<T> {
 export type PreNode<T> = TerminalNode<T> | PreRuleNode<T> | SequenceNode<T> | Empty;
 
 export interface PostRuleNode<T> {
-    type: 'rule';
+    type: "rule";
     name: string;
     span: Span;
     children: PostNode<T>[];

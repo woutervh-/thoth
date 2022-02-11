@@ -1,14 +1,14 @@
-import * as Nodes from './node';
-import { RuleBuilder } from './rule-builder';
-import * as Steps from './step';
-import { StepBuilder } from './step-builder';
+import * as Nodes from "./node";
+import { RuleBuilder } from "./rule-builder";
+import * as Steps from "./step";
+import { StepBuilder } from "./step-builder";
 
 function parseTerminal<T>(input: T[], position: number, step: Steps.Terminal<T>): Nodes.PreNode<T> | null {
     if (input[position] === step.input) {
         return {
             span: { start: position, end: position + 1 },
             terminal: input[position],
-            type: 'terminal'
+            type: "terminal"
         };
     } else {
         return null;
@@ -29,7 +29,7 @@ function parseSequence<T>(input: T[], position: number, rules: Map<string, Steps
     return {
         children,
         span: { start: position, end: currentPosition },
-        type: 'sequence'
+        type: "sequence"
     };
 }
 
@@ -46,7 +46,7 @@ function parseAlternatives<T>(input: T[], position: number, rules: Map<string, S
 function parseReference<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, name: string): Nodes.PreNode<T> | null {
     const step = rules.get(name);
     if (step === undefined) {
-        throw new Error('Rule is not defined.');
+        throw new Error("Rule is not defined.");
     }
     return parseStep(input, position, rules, step);
 }
@@ -65,32 +65,32 @@ function parseRepeat<T>(input: T[], position: number, rules: Map<string, Steps.S
         currentStep += 1;
     }
     if (currentStep < step.min) {
-        throw new Error('Too little repeats.');
+        throw new Error("Too little repeats.");
     }
     return {
         children,
         span: { start: position, end: currentPosition },
-        type: 'sequence'
+        type: "sequence"
     };
 }
 
 function parseEmpty(position: number): Nodes.Empty | null {
-    return { type: 'empty', span: { start: position, end: position } };
+    return { type: "empty", span: { start: position, end: position } };
 }
 
 function parseStep<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Step<T>): Nodes.PreNode<T> | null {
     switch (step.type) {
-        case 'terminal':
+        case "terminal":
             return parseTerminal(input, position, step);
-        case 'sequence':
+        case "sequence":
             return parseSequence(input, position, rules, step);
-        case 'alternatives':
+        case "alternatives":
             return parseAlternatives(input, position, rules, step);
-        case 'reference':
+        case "reference":
             return parseReference(input, position, rules, step.name);
-        case 'repeat':
+        case "repeat":
             return parseRepeat(input, position, rules, step);
-        case 'empty':
+        case "empty":
             return parseEmpty(position);
     }
 }
@@ -100,17 +100,17 @@ function parse<T>(input: T[], rules: Map<string, Steps.Step<T>>, initialRule: st
 }
 
 const rules = new RuleBuilder<string>()
-    .rule('S', StepBuilder.sequence([
-        StepBuilder.terminal('a'),
+    .rule("S", StepBuilder.sequence([
+        StepBuilder.terminal("a"),
         StepBuilder.alternatives([
-            StepBuilder.reference('S'),
+            StepBuilder.reference("S"),
             StepBuilder.empty()
         ]),
-        StepBuilder.terminal('b')
+        StepBuilder.terminal("b")
     ]))
     .build();
 
-const input = 'aaaaabbbbb';
+const input = "aaaaabbbbb";
 
-const result = parse(input.split(''), rules, 'S');
+const result = parse(input.split(""), rules, "S");
 console.log(JSON.stringify(result));

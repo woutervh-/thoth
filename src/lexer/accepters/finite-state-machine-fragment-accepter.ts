@@ -1,6 +1,6 @@
-import { FiniteStateMachine } from '../../finite-state-machine/finite-state-machine';
-import { Accepter } from './accepter';
-import { Fragment } from './fragments/fragment';
+import { FiniteStateMachine } from "../../finite-state-machine/finite-state-machine";
+import { Accepter } from "./accepter";
+import { Fragment } from "./fragments/fragment";
 
 export class FiniteStateMachineFragmentAccepter<S, T> implements Accepter<T> {
     public name: string;
@@ -25,15 +25,15 @@ export class FiniteStateMachineFragmentAccepter<S, T> implements Accepter<T> {
 
     public consumeNextInput(input: T) {
         if (this.currentState === undefined) {
-            throw new Error('Invalid state.');
+            throw new Error("Invalid state.");
         }
         const transitionMap = this.transitionMap.get(this.currentState);
         if (transitionMap === undefined) {
-            throw new Error('Invalid input.');
+            throw new Error("Invalid input.");
         }
         const transition = transitionMap.find((transition) => transition[0].accepts(input));
         if (transition === undefined) {
-            throw new Error('Invalid input.');
+            throw new Error("Invalid input.");
         }
         this.currentState = transition[1];
     }

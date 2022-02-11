@@ -1,44 +1,44 @@
-import { Grammar } from '../../grammar/grammar';
-import { Minimizer } from '../../grammar/minimizer';
-import { Printer } from '../../grammar/printer';
-import { Recursion } from '../../grammar/recursion';
-import { RuleNode } from './rule-node';
-import { Dot } from './dot';
+import { Grammar } from "../../grammar/grammar";
+import { Minimizer } from "../../grammar/minimizer";
+import { Printer } from "../../grammar/printer";
+import { Recursion } from "../../grammar/recursion";
+import { RuleNode } from "./rule-node";
+import { Dot } from "./dot";
 
 let grammar: Grammar<string> = {
     E: [
-        [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '^' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'terminal', terminal: '-' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '*' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'non-terminal', name: 'E' }, { type: 'terminal', terminal: '-' }, { type: 'non-terminal', name: 'E' }],
-        [{ type: 'terminal', terminal: 'a' }]
+        [{ type: "non-terminal", name: "E" }, { type: "terminal", terminal: "^" }, { type: "non-terminal", name: "E" }],
+        [{ type: "terminal", terminal: "-" }, { type: "non-terminal", name: "E" }],
+        [{ type: "non-terminal", name: "E" }, { type: "terminal", terminal: "*" }, { type: "non-terminal", name: "E" }],
+        [{ type: "non-terminal", name: "E" }, { type: "terminal", terminal: "-" }, { type: "non-terminal", name: "E" }],
+        [{ type: "terminal", terminal: "a" }]
     ]
 };
 
-console.log('--- original ---');
+console.log("--- original ---");
 Printer.printGrammar(grammar);
 
 grammar = Recursion.removeAllLeftRecursion(grammar);
-console.log('--- removed left-recursion ---');
+console.log("--- removed left-recursion ---");
 Printer.printGrammar(grammar);
 
 // grammar = Deterministic.leftFactor(grammar);
-// console.log('--- left-factored ---');
+// console.log("--- left-factored ---");
 // Printer.printGrammar(grammar);
 
 grammar = Minimizer.removeEmptyRules(grammar);
-console.log('--- remove empty non-terminals ---');
+console.log("--- remove empty non-terminals ---");
 Printer.printGrammar(grammar);
 
 grammar = Minimizer.substituteSimpleNonTerminals(grammar);
-console.log('--- substitute simple non-terminals ---');
+console.log("--- substitute simple non-terminals ---");
 Printer.printGrammar(grammar);
 
-grammar = Minimizer.removeUnreachables(grammar, ['E']);
-console.log('--- remove unreachables ---');
+grammar = Minimizer.removeUnreachables(grammar, ["E"]);
+console.log("--- remove unreachables ---");
 Printer.printGrammar(grammar);
 
-const startSymbol = 'E';
+const startSymbol = "E";
 const initialRootNodes = grammar[startSymbol].map((sequence, index): RuleNode => {
     return {
         nonTerminal: startSymbol,
@@ -58,7 +58,7 @@ function expandTerminalRules(nodes: RuleNode[], token: string): RuleNode[] {
         }
 
         const term = sequence[node.termIndex];
-        if (term.type === 'terminal') {
+        if (term.type === "terminal") {
             if (term.terminal === token) {
                 nextNodes.push({
                     nonTerminal: node.nonTerminal,
@@ -94,7 +94,7 @@ function expandNonTerminalRules(nodes: RuleNode[]): RuleNode[] {
         }
 
         const term = sequence[node.termIndex];
-        if (term.type !== 'non-terminal') {
+        if (term.type !== "non-terminal") {
             nextNodes.push(node);
             continue;
         }
@@ -165,21 +165,21 @@ function acceptToken(nodes: RuleNode[], token: string): RuleNode[] {
 
 let currentRootNodes = expandNonTerminalRules(initialRootNodes);
 
-console.log('--- first rule tree ---');
+console.log("--- first rule tree ---");
 console.log(Dot.toDot(grammar, currentRootNodes));
 
-console.log('--- second rule tree ---');
-currentRootNodes = acceptToken(currentRootNodes, 'a');
+console.log("--- second rule tree ---");
+currentRootNodes = acceptToken(currentRootNodes, "a");
 console.log(Dot.toDot(grammar, currentRootNodes));
 
-console.log('--- third rule tree ---');
-currentRootNodes = acceptToken(currentRootNodes, '*');
+console.log("--- third rule tree ---");
+currentRootNodes = acceptToken(currentRootNodes, "*");
 console.log(Dot.toDot(grammar, currentRootNodes));
 
-console.log('--- fourth rule tree ---');
-currentRootNodes = acceptToken(currentRootNodes, 'a');
+console.log("--- fourth rule tree ---");
+currentRootNodes = acceptToken(currentRootNodes, "a");
 console.log(Dot.toDot(grammar, currentRootNodes));
 
-console.log('--- fifth rule tree ---');
-currentRootNodes = acceptToken(currentRootNodes, '-');
+console.log("--- fifth rule tree ---");
+currentRootNodes = acceptToken(currentRootNodes, "-");
 console.log(Dot.toDot(grammar, currentRootNodes));

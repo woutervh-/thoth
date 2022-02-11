@@ -1,4 +1,4 @@
-import { Step } from './step';
+import { Step } from "./step";
 
 export class RuleBuilder<T> {
     private rules: Map<string, Step<T>> = new Map();

@@ -1,14 +1,12 @@
 {
     "compilerOptions": {
-        "target": "es2017",
-        "module": "commonjs",
+        "target": "ESNext",
+        "module": "CommonJS",
         "strict": true,
         "sourceMap": true,
-        "noUnusedLocals": true,
         "noImplicitAny": true,
-        "noImplicitThis": true,
         "lib": [
-            "es2017"
+            "ESNext"
         ],
         "types": [
             "node",

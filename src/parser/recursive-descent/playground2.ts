@@ -1,14 +1,14 @@
-import * as Nodes from './node';
-import { RuleBuilder } from './rule-builder';
-import * as Steps from './step';
-import { StepBuilder } from './step-builder';
+import * as Nodes from "./node";
+import { RuleBuilder } from "./rule-builder";
+import * as Steps from "./step";
+import { StepBuilder } from "./step-builder";
 
 function parseTerminal<T>(input: T[], position: number, step: Steps.Terminal<T>): Nodes.PreNode<T> | null {
     if (input[position] === step.input) {
         return {
             span: { start: position, end: position + 1 },
             terminal: input[position],
-            type: 'terminal'
+            type: "terminal"
         };
     } else {
         return null;
@@ -29,7 +29,7 @@ function parseSequence<T>(input: T[], position: number, rules: Map<string, Steps
     return {
         children,
         span: { start: position, end: currentPosition },
-        type: 'sequence'
+        type: "sequence"
     };
 }
 
@@ -46,7 +46,7 @@ function parseAlternatives<T>(input: T[], position: number, rules: Map<string, S
 function parseReference<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, name: string): Nodes.PreNode<T> | null {
     const step = rules.get(name);
     if (step === undefined) {
-        throw new Error('Rule is not defined.');
+        throw new Error("Rule is not defined.");
     }
     const child = parseStep(input, position, rules, step);
     if (child === null) {
@@ -56,7 +56,7 @@ function parseReference<T>(input: T[], position: number, rules: Map<string, Step
         children: [child],
         name,
         span: child.span,
-        type: 'rule'
+        type: "rule"
     };
 }
 
@@ -79,42 +79,42 @@ function parseRepeat<T>(input: T[], position: number, rules: Map<string, Steps.S
     return {
         children,
         span: { start: position, end: currentPosition },
-        type: 'sequence'
+        type: "sequence"
     };
 }
 
 function parseEmpty(position: number): Nodes.Empty | null {
-    return { type: 'empty', span: { start: position, end: position } };
+    return { type: "empty", span: { start: position, end: position } };
 }
 
 function parseStep<T>(input: T[], position: number, rules: Map<string, Steps.Step<T>>, step: Steps.Step<T>): Nodes.PreNode<T> | null {
     switch (step.type) {
-        case 'terminal':
+        case "terminal":
             return parseTerminal(input, position, step);
-        case 'sequence':
+        case "sequence":
             return parseSequence(input, position, rules, step);
-        case 'alternatives':
+        case "alternatives":
             return parseAlternatives(input, position, rules, step);
-        case 'reference':
+        case "reference":
             return parseReference(input, position, rules, step.name);
-        case 'repeat':
+        case "repeat":
             return parseRepeat(input, position, rules, step);
-        case 'empty':
+        case "empty":
             return parseEmpty(position);
     }
 }
 
 function postProcess1<T>(node: Nodes.PreNode<T>): Nodes.PreNode<T> {
     switch (node.type) {
-        case 'empty':
-        case 'terminal':
+        case "empty":
+        case "terminal":
             return node;
-        case 'rule':
-        case 'sequence': {
+        case "rule":
+        case "sequence": {
             const children = node.children.map(postProcess1);
             const newChildren: Nodes.PreNode<T>[] = [];
             for (const child of children) {
-                if (child.type === 'sequence') {
+                if (child.type === "sequence") {
                     newChildren.push(...child.children);
                 } else {
                     newChildren.push(child);
@@ -126,11 +126,11 @@ function postProcess1<T>(node: Nodes.PreNode<T>): Nodes.PreNode<T> {
 }
 
 function postProcess2<T>(node: Nodes.PreNode<T>): Nodes.PreNode<T> {
-    if (node.type === 'rule') {
+    if (node.type === "rule") {
         const children = node.children.map(postProcess2);
         const newChildren: Nodes.PreNode<T>[] = [];
         for (const child of children) {
-            if (child.type === 'rule' && node.name === child.name) {
+            if (child.type === "rule" && node.name === child.name) {
                 newChildren.push(...child.children);
             } else {
                 newChildren.push(child);
@@ -151,7 +151,7 @@ function makeNameMap<T>(node: Nodes.PreNode<T>) {
     const queue = [node];
     while (queue.length >= 1) {
         const node = queue.pop()!;
-        if (node.type === 'rule' || node.type === 'sequence') {
+        if (node.type === "rule" || node.type === "sequence") {
             queue.push(...node.children);
         }
         nameMap.set(node, `t${nameMap.size}`);
@@ -161,13 +161,13 @@ function makeNameMap<T>(node: Nodes.PreNode<T>) {
 
 function toDot<T>(node: Nodes.PreNode<T>, terminalToLabel: (terminal: T) => string) {
     const dotHeader: string[] = [
-        'digraph G {',
-        'ratio = fill;',
-        'node [style=filled];'
+        "digraph G {",
+        "ratio = fill;",
+        "node [style=filled];"
     ];
 
     const dotFooter: string[] = [
-        '}'
+        "}"
     ];
 
     const nameMap = makeNameMap(node);
@@ -176,21 +176,21 @@ function toDot<T>(node: Nodes.PreNode<T>, terminalToLabel: (terminal: T) => stri
     const queue = [node];
     while (queue.length >= 1) {
         const node = queue.pop()!;
-        if (node.type === 'rule' || node.type === 'sequence') {
+        if (node.type === "rule" || node.type === "sequence") {
             for (const child of node.children) {
                 transitions.push(`${nameMap.get(node)!} -> ${nameMap.get(child)!};`);
                 queue.push(child);
             }
         }
         let label: string;
-        if (node.type === 'rule') {
+        if (node.type === "rule") {
             label = node.name;
-        } else if (node.type === 'terminal') {
+        } else if (node.type === "terminal") {
             label = terminalToLabel(node.terminal);
-        } else if (node.type === 'empty') {
-            label = 'ε';
+        } else if (node.type === "empty") {
+            label = "ε";
         } else {
-            label = '';
+            label = "";
         }
         nodes.push(`${nameMap.get(node)!} [label="${label}"];`);
     }
@@ -201,29 +201,29 @@ function toDot<T>(node: Nodes.PreNode<T>, terminalToLabel: (terminal: T) => stri
         ...nodes,
         ...dotFooter
     ];
-    return lines.join('\n');
+    return lines.join("\n");
 }
 
-const integer = StepBuilder.repeat(StepBuilder.alternatives('0123456789'.split('').map((digit) => StepBuilder.terminal(digit))), 1);
-const operator = StepBuilder.alternatives('+-*/'.split('').map((operator) => StepBuilder.terminal(operator)));
-const semicolon = StepBuilder.terminal(';');
-const leftParenthesis = StepBuilder.terminal('(');
-const rightParenthesis = StepBuilder.terminal(')');
+const integer = StepBuilder.repeat(StepBuilder.alternatives("0123456789".split("").map((digit) => StepBuilder.terminal(digit))), 1);
+const operator = StepBuilder.alternatives("+-*/".split("").map((operator) => StepBuilder.terminal(operator)));
+const semicolon = StepBuilder.terminal(";");
+const leftParenthesis = StepBuilder.terminal("(");
+const rightParenthesis = StepBuilder.terminal(")");
 const expression = StepBuilder.alternatives([
-    StepBuilder.sequence([integer, StepBuilder.repeat(StepBuilder.sequence([operator, StepBuilder.reference('E')]))]),
-    StepBuilder.sequence([leftParenthesis, StepBuilder.reference('E'), rightParenthesis])
+    StepBuilder.sequence([integer, StepBuilder.repeat(StepBuilder.sequence([operator, StepBuilder.reference("E")]))]),
+    StepBuilder.sequence([leftParenthesis, StepBuilder.reference("E"), rightParenthesis])
 ]);
-const statement = StepBuilder.sequence([StepBuilder.reference('E'), semicolon]);
+const statement = StepBuilder.sequence([StepBuilder.reference("E"), semicolon]);
 const statements = StepBuilder.repeat(statement);
 
 const rules = new RuleBuilder<string>()
-    .rule('S', statements)
-    .rule('E', expression)
+    .rule("S", statements)
+    .rule("E", expression)
     .build();
 
-const input = '123+456+789;4-(3*2-1);';
+const input = "123+456+789;4-(3*2-1);";
 
-const result = parse(input.split(''), rules, 'S');
+const result = parse(input.split(""), rules, "S");
 if (result !== null) {
     if ({} === {}) {
         postProcess2(postProcess1(result));

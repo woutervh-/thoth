@@ -1,7 +1,7 @@
-import { Deterministic } from './deterministic';
-import { FiniteStateMachine } from './finite-state-machine';
-import { Minimizer } from './minimizer';
-import { Numberfier } from './numberfier';
+import { Deterministic } from "./deterministic";
+import { FiniteStateMachine } from "./finite-state-machine";
+import { Minimizer } from "./minimizer";
+import { Numberfier } from "./numberfier";
 
 export class Builder<T> {
     /**
@@ -172,29 +172,29 @@ export class Builder<T> {
     }
 
     /**
-     * Creates a builder for the finite state machine which repeats this builder's finite state machine zero or more times.
+     * Creates a builder for the finite state machine which repeats this builder"s finite state machine zero or more times.
      */
     public zeroOrMore(): Builder<T> {
         return Builder.any(this);
     }
 
     /**
-     * Creates a builder for the finite state machine which repeats this builder's finite state machine once or more.
+     * Creates a builder for the finite state machine which repeats this builder"s finite state machine once or more.
      */
     public oneOrMore(): Builder<T> {
         return Builder.many(this);
     }
 
     /**
-     * Creates a builder for the finite state machine which immediately accepts or accepts the language of this builder's finite state machine.
+     * Creates a builder for the finite state machine which immediately accepts or accepts the language of this builder"s finite state machine.
      */
     public optional(): Builder<T> {
         return Builder.maybe(this);
     }
 
     /**
-     * Creates a builder for the finite state machine which repeats this builder's finite state machine exactly the specified amount of times.
-     * @param times the amount of times to repeat this builder's finite state machine.
+     * Creates a builder for the finite state machine which repeats this builder"s finite state machine exactly the specified amount of times.
+     * @param times the amount of times to repeat this builder"s finite state machine.
      */
     public repeat(times: number): Builder<T> {
         if (times <= 0) {
@@ -209,16 +209,16 @@ export class Builder<T> {
     }
 
     /**
-     * Creates a builder for the finite state machine which accepts the language of this builder's finite state machine followed by the language of the given builder's finite state machine.
-     * @param term builder whose finite state machine will be succeeding this builder's finite state machine.
+     * Creates a builder for the finite state machine which accepts the language of this builder"s finite state machine followed by the language of the given builder"s finite state machine.
+     * @param term builder whose finite state machine will be succeeding this builder"s finite state machine.
      */
     public followedBy(term: Builder<T>): Builder<T> {
         return Builder.succession(this, term);
     }
 
     /**
-     * Creates a builder for the finite state machine which accepts either the language of this builder's finite state machine or the given builder's finite state machine.
-     * @param term builder whose finite state machine will an alternative to this builder's finite state machine.
+     * Creates a builder for the finite state machine which accepts either the language of this builder"s finite state machine or the given builder"s finite state machine.
+     * @param term builder whose finite state machine will an alternative to this builder"s finite state machine.
      */
     public or(term: Builder<T>): Builder<T> {
         return Builder.either(this, term);

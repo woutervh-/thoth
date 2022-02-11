@@ -1,4 +1,4 @@
-import { Fragment } from './fragment';
+import { Fragment } from "./fragment";
 
 export class SingleCharacterFragment implements Fragment<string> {
     public name: string;

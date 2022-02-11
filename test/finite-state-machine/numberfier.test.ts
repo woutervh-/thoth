@@ -1,20 +1,20 @@
-import * as assert from 'assert';
-import { FiniteStateMachine } from '../../src/finite-state-machine/finite-state-machine';
-import { Numberfier } from '../../src/finite-state-machine/numberfier';
+import * as assert from "assert";
+import { FiniteStateMachine } from "../../src/finite-state-machine/finite-state-machine";
+import { Numberfier } from "../../src/finite-state-machine/numberfier";
 
-describe('Numberfier', () => {
-    describe('Numberfier.convertStateToNumbers', () => {
-        it('produces an equivalent state machine with numbers for state #1', () => {
+describe("Numberfier", () => {
+    describe("Numberfier.convertStateToNumbers", () => {
+        it("produces an equivalent state machine with numbers for state #1", () => {
             const fsm: FiniteStateMachine<string, number> = {
-                acceptingStates: ['e'],
-                initialState: 'a',
+                acceptingStates: ["e"],
+                initialState: "a",
                 transitions: [
-                    ['a', 0, 'a'], ['a', 0, 'b'], ['a', 0, 'c'], ['a', 0, 'd'], ['a', 0, 'e'],
-                    ['a', 1, 'd'], ['a', 1, 'e'],
-                    ['b', 0, 'c'],
-                    ['b', 1, 'e'],
-                    ['c', 1, 'b'],
-                    ['d', 0, 'e']
+                    ["a", 0, "a"], ["a", 0, "b"], ["a", 0, "c"], ["a", 0, "d"], ["a", 0, "e"],
+                    ["a", 1, "d"], ["a", 1, "e"],
+                    ["b", 0, "c"],
+                    ["b", 1, "e"],
+                    ["c", 1, "b"],
+                    ["d", 0, "e"]
                 ]
             };
             const actual = Numberfier.convertStateToNumbers(fsm);

@@ -1,5 +1,5 @@
-import { FiniteStateMachine } from '../../finite-state-machine/finite-state-machine';
-import { Accepter } from './accepter';
+import { FiniteStateMachine } from "../../finite-state-machine/finite-state-machine";
+import { Accepter } from "./accepter";
 
 export class FiniteStateMachineAccepter<S, T> implements Accepter<T> {
     public name: string;
@@ -18,7 +18,7 @@ export class FiniteStateMachineAccepter<S, T> implements Accepter<T> {
                 this.transitionMap.set(transition[0], new Map());
             }
             if (this.transitionMap.get(transition[0])!.has(transition[1])) {
-                throw new Error('Undeterministic transition.');
+                throw new Error("Undeterministic transition.");
             }
             this.transitionMap.get(transition[0])!.set(transition[1], transition[2]);
         }
@@ -27,15 +27,15 @@ export class FiniteStateMachineAccepter<S, T> implements Accepter<T> {
 
     public consumeNextInput(input: T) {
         if (this.currentState === undefined) {
-            throw new Error('Invalid state.');
+            throw new Error("Invalid state.");
         }
         const transitionMap = this.transitionMap.get(this.currentState);
         if (transitionMap === undefined) {
-            throw new Error('Invalid input.');
+            throw new Error("Invalid input.");
         }
         const nextState = transitionMap.get(input);
         if (nextState === undefined) {
-            throw new Error('Invalid input.');
+            throw new Error("Invalid input.");
         }
         this.currentState = nextState;
     }

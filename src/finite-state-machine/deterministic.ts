@@ -1,4 +1,4 @@
-import { FiniteStateMachine } from './finite-state-machine';
+import { FiniteStateMachine } from "./finite-state-machine";
 
 export class Deterministic {
     public static deterministic<S, T>(fsm: FiniteStateMachine<S, T>): FiniteStateMachine<S[], T> {

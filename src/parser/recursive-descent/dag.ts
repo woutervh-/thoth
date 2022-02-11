@@ -29,21 +29,21 @@ export class DAG {
 
     public hasChildren(node: Node) {
         if (!this.nodes.includes(node)) {
-            throw new Error('Node does not exist.');
+            throw new Error("Node does not exist.");
         }
         return this.children.has(node);
     }
 
     public hasParents(node: Node) {
         if (!this.nodes.includes(node)) {
-            throw new Error('Node does not exist.');
+            throw new Error("Node does not exist.");
         }
         return this.parents.has(node);
     }
 
     public getChildren(node: Node): Node[] | null {
         if (!this.nodes.includes(node)) {
-            throw new Error('Node does not exist.');
+            throw new Error("Node does not exist.");
         }
         if (!this.children.has(node)) {
             return null;
@@ -53,7 +53,7 @@ export class DAG {
 
     public getParents(node: Node): Node[] | null {
         if (!this.nodes.includes(node)) {
-            throw new Error('Node does not exist.');
+            throw new Error("Node does not exist.");
         }
         if (!this.parents.has(node)) {
             return null;
@@ -63,10 +63,10 @@ export class DAG {
 
     public setParent(child: Node, parent: Node) {
         if (!this.nodes.includes(child)) {
-            throw new Error('Child node does not exist.');
+            throw new Error("Child node does not exist.");
         }
         if (!this.nodes.includes(parent)) {
-            throw new Error('Parent node does not exist.');
+            throw new Error("Parent node does not exist.");
         }
         if (!this.children.has(parent)) {
             this.children.set(parent, []);
@@ -88,16 +88,16 @@ export class DAG {
 
     public unsetParent(child: Node, parent: Node) {
         if (!this.nodes.includes(child)) {
-            throw new Error('Child node does not exist.');
+            throw new Error("Child node does not exist.");
         }
         if (!this.nodes.includes(parent)) {
-            throw new Error('Parent node does not exist.');
+            throw new Error("Parent node does not exist.");
         }
         if (!this.children.has(parent)) {
-            throw new Error('Parent has no children.');
+            throw new Error("Parent has no children.");
         }
         if (!this.parents.has(child)) {
-            throw new Error('Child has no parents.');
+            throw new Error("Child has no parents.");
         }
 
         const children = this.children.get(parent)!;
@@ -125,14 +125,14 @@ export class DAG {
 
     public removeNode(node: Node) {
         if (this.parents.has(node)) {
-            throw new Error('Node still has parents.');
+            throw new Error("Node still has parents.");
         }
         if (this.children.has(node)) {
-            throw new Error('Node still has children.');
+            throw new Error("Node still has children.");
         }
         const index = this.nodes.indexOf(node);
         if (index <= -1) {
-            throw new Error('Node does not exist.');
+            throw new Error("Node does not exist.");
         }
         this.nodes.splice(index, 1);
     }
@@ -140,7 +140,7 @@ export class DAG {
     public destroyNode(node: Node) {
         const index = this.nodes.indexOf(node);
         if (index <= -1) {
-            throw new Error('Node does not exist.');
+            throw new Error("Node does not exist.");
         }
         const parents = this.getParents(node);
         if (parents) {
