@@ -1,7 +1,7 @@
 /**
  * States S, transition alphabet T.
  */
-interface FSM<S, T> {
+ interface FSM<S, T> {
     // The accepting states.
     accepting: S[];
 
@@ -370,8 +370,9 @@ const grammar = alternatives(
 const [_, fsm] = toFSM(grammar);
 const dfa = toNumberState(toDeterministic(fsm));
 // TODO: remove deadlocks (state from which no final state is reachable)
-const min = toNumberState(toMinimal(dfa));
-const dot = toDot(min);
+// TODO: before minimizing, ensure accepting states have "names" and treat differently named states as separate partitions in the minimization.
+// const min = toNumberState(toMinimal(dfa));
+const dot = toDot(dfa);
 
 console.log(dot);
 
