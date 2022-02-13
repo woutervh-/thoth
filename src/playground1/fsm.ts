@@ -244,10 +244,7 @@ function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
         transitionMap.set(state, new Map());
     }
     for (const [s, i, t] of fsm.transitions) {
-        const sourceMap = transitionMap.get(s);
-        if (sourceMap) {
-            sourceMap.set(i, t);
-        }
+        transitionMap.get(s)?.set(i, t);
     }
 
     const alphabet = Array.from(new Set(fsm.transitions.filter(([s, i, t]) => reachableSet.has(s)).map(([s, i, t]) => i)));
@@ -256,7 +253,7 @@ function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
     const reachableAccepting = Array.from(reachableSet).filter((s) => accepting.has(s));
     const reachableRejecting = Array.from(reachableSet).filter((s) => !accepting.has(s));
 
-    let lastParitionSize = 0;
+    let lastPartitionSize = 0;
     let partitions: S[][] = [];
     if (reachableAccepting.length >= 1) {
         partitions.push(reachableAccepting);
@@ -264,7 +261,7 @@ function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
     if (reachableRejecting.length >= 1) {
         partitions.push(reachableRejecting);
     }
-    while (partitions.length > lastParitionSize) {
+    while (partitions.length > lastPartitionSize) {
         const partitionsNodeMap = new Map<S, S[]>(partitions.map((partition) => partition.map((state): [S, S[]] => [state, partition])).reduce((entries, partition) => [...entries, ...partition]));
         const newPartitions: S[][] = [];
         for (const oldPartition of partitions) {
@@ -293,7 +290,7 @@ function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
             }
         }
 
-        lastParitionSize = partitions.length;
+        lastPartitionSize = partitions.length;
         partitions = newPartitions;
     }
 

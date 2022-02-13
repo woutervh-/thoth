@@ -1,12 +1,17 @@
+import * as fs from "fs";
+
 /**
  * States S, transition alphabet T.
  */
- interface FSM<S, T> {
+interface FSM<S, T> {
     // The accepting states.
     accepting: S[];
 
     // The initial state.
     initial: S;
+
+    // Names.
+    names: [S, string][];
 
     // Possible transitions: [S, T, S'] means from state S we can accept input T to move to state S'.
     transitions: [S, T, S][];
@@ -23,6 +28,12 @@ function toDot(fsm: FSM<number, string>): string {
     // accepting states (but not initial)
     if (fsm.accepting.some((s) => s !== fsm.initial)) {
         lines.push(`node [shape = doublecircle, style = solid]; ${fsm.accepting.filter((s) => s !== fsm.initial).join(" ")};`);
+    }
+    for (const [s, n] of fsm.names) {
+        const names = fsm.names.filter(([s2, n]) => s === s2);
+        if (n === names[0][1]) {
+            lines.push(`${s} [label = "${names.map(([s, n]) => n).join(",")}"];`);
+        }
     }
     lines.push("node [style = solid];");
     lines.push("node [shape = circle];");
@@ -80,7 +91,13 @@ interface Maybe {
     term: Term;
 }
 
-type Term = Empty | Terminal | Alternatives | Sequence | Choice | Follows | Many | Any | Maybe;
+interface Named {
+    type: "named";
+    name: string;
+    term: Term;
+}
+
+type Term = Empty | Terminal | Alternatives | Sequence | Choice | Follows | Many | Any | Maybe | Named;
 
 function offsetFSM([count, fsm]: [number, FSM<number, string>], offset: number): [number, FSM<number, string>] {
     return [
@@ -88,6 +105,7 @@ function offsetFSM([count, fsm]: [number, FSM<number, string>], offset: number):
         {
             accepting: fsm.accepting.map((s) => s + offset),
             initial: fsm.initial + offset,
+            names: fsm.names.map(([s, n]) => [s + offset, n]),
             transitions: fsm.transitions.map(([s, i, t]) => [s + offset, i, t + offset])
         }
     ];
@@ -96,19 +114,26 @@ function offsetFSM([count, fsm]: [number, FSM<number, string>], offset: number):
 function toFSM(term: Term): [number, FSM<number, string>] {
     switch (term.type) {
         case "empty": {
-            return [1, { accepting: [0], initial: 0, transitions: [] }];
+            return [1, { accepting: [0], initial: 0, names: [], transitions: [] }];
         }
         case "terminal": {
-            return [2, { accepting: [1], initial: 0, transitions: [[0, term.input, 1]] }];
+            return [2, { accepting: [1], initial: 0, names: [], transitions: [[0, term.input, 1]] }];
         }
         case "choice": {
             const [leftCount, leftFSM] = toFSM(term.left);
             const [rightCount, rightFSM] = offsetFSM(toFSM(term.right), leftCount);
 
             const initial = leftCount + rightCount;
+            const names = [...leftFSM.names, ...rightFSM.names];
 
             const accepting = [...leftFSM.accepting, ...rightFSM.accepting];
             if (leftFSM.accepting.includes(leftFSM.initial) || rightFSM.accepting.includes(rightFSM.initial)) {
+                if (leftFSM.accepting.includes(leftFSM.initial)) {
+                    names.push(...leftFSM.names.filter(([s, n]) => s === leftFSM.initial).map(([s, n]): [number, string] => [initial, n]));
+                }
+                if (rightFSM.accepting.includes(rightFSM.initial)) {
+                    names.push(...rightFSM.names.filter(([s, n]) => s === rightFSM.initial).map(([s, n]): [number, string] => [initial, n]));
+                }
                 accepting.push(initial);
             }
 
@@ -119,17 +144,19 @@ function toFSM(term: Term): [number, FSM<number, string>] {
                 ...rightFSM.transitions.filter(([s, i, t]) => s === rightFSM.initial).map(([s, i, t]): [number, string, number] => [initial, i, t])
             ];
 
-            return [leftCount + rightCount + 1, { accepting, initial, transitions }];
+            return [leftCount + rightCount + 1, { accepting, initial, names, transitions }];
         }
         case "follows": {
             const [leftCount, leftFSM] = toFSM(term.left);
             const [rightCount, rightFSM] = offsetFSM(toFSM(term.right), leftCount);
 
             const initial = leftFSM.initial;
+            const names = [...rightFSM.names];
 
             const accepting = [...rightFSM.accepting];
             if (rightFSM.accepting.includes(rightFSM.initial)) {
                 accepting.push(...leftFSM.accepting);
+                names.push(...leftFSM.names);
             }
 
             const transitions = [...leftFSM.transitions, ...rightFSM.transitions];
@@ -137,7 +164,7 @@ function toFSM(term: Term): [number, FSM<number, string>] {
                 transitions.push(...rightFSM.transitions.filter(([s, i, t]) => s === rightFSM.initial).map(([s, i, t]): [number, string, number] => [a, i, t]));
             }
 
-            return [leftCount + rightCount, { accepting, initial, transitions }];
+            return [leftCount + rightCount, { accepting, initial, names, transitions }];
         }
         case "alternatives": {
             return toFSM(term.terms.reduce((left, right): Term => ({ type: "choice", left, right })));
@@ -150,36 +177,35 @@ function toFSM(term: Term): [number, FSM<number, string>] {
 
             const initial = fsm.initial;
             const accepting = fsm.accepting;
+            const names = fsm.names;
 
             const transitions = [...fsm.transitions];
             for (const a of fsm.accepting) {
                 transitions.push(...fsm.transitions.filter(([s, i, t]) => s === fsm.initial).map(([s, i, t]): [number, string, number] => [a, i, t]));
             }
 
-            return [count, { accepting, initial, transitions }];
+            return [count, { accepting, initial, names, transitions }];
         }
         case "maybe": {
-            // const [count, fsm] = toFSM(term.term);
-
-            // const initial = count;
-            // const accepting = [...fsm.accepting, initial];
-
-            // const transitions = [
-            //     ...fsm.transitions,
-            //     ...fsm.transitions.filter(([s, i, t]) => s === fsm.initial).map(([s, i, t]): [number, string, number] => [initial, i, t])
-            // ];
-
-            // return [count + 1, { accepting, initial, transitions }];
-
             const [count, fsm] = toFSM(term.term);
             const initial = fsm.initial;
+            const names = [...fsm.names, ...fsm.names.map(([s, n]): [number, string] => [initial, n])];
             const accepting = [...fsm.accepting, initial];
             const transitions = fsm.transitions;
 
-            return [count, { accepting, initial, transitions }];
+            return [count, { accepting, initial, names, transitions }];
         }
         case "any": {
             return toFSM({ type: "maybe", term: { type: "many", term: term.term } });
+        }
+        case "named": {
+            const [count, fsm] = toFSM(term.term);
+            const initial = fsm.initial;
+            const names = fsm.accepting.map((s): [number, string] => [s, term.name]);
+            const accepting = fsm.accepting;
+            const transitions = fsm.transitions;
+
+            return [count, { accepting, initial, names, transitions }];
         }
     }
 }
@@ -224,8 +250,9 @@ function toDeterministic<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
     const accepting = Array.from(markedSets).filter((stateSet) => fsm.accepting.some((s) => stateSet.has(s))).map((stateSet) => setToArray.get(stateSet)!);
     const initial = setToArray.get(initialStateSet)!;
     const transitions = setTransitions.map(([s, i, t]): [S[], T, S[]] => [setToArray.get(s)!, i, setToArray.get(t)!]);
+    const names = accepting.map((ss) => fsm.names.filter(([s, n]) => ss.includes(s)).map(([s, n]): [S[], string] => [ss, n])).reduce((prev, current) => [...prev, ...current]);
 
-    return { accepting, initial, transitions };
+    return { accepting, initial, names, transitions };
 }
 
 function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
@@ -244,10 +271,15 @@ function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
         transitionMap.set(state, new Map());
     }
     for (const [s, i, t] of fsm.transitions) {
-        const sourceMap = transitionMap.get(s);
-        if (sourceMap) {
-            sourceMap.set(i, t);
+        transitionMap.get(s)?.set(i, t);
+    }
+
+    const nameMap = new Map<S, Set<string>>();
+    for (const [s, n] of fsm.names) {
+        if (!nameMap.has(s)) {
+            nameMap.set(s, new Set());
         }
+        nameMap.get(s)!.add(n);
     }
 
     const alphabet = Array.from(new Set(fsm.transitions.filter(([s, i, t]) => reachableSet.has(s)).map(([s, i, t]) => i)));
@@ -256,7 +288,7 @@ function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
     const reachableAccepting = Array.from(reachableSet).filter((s) => accepting.has(s));
     const reachableRejecting = Array.from(reachableSet).filter((s) => !accepting.has(s));
 
-    let lastParitionSize = 0;
+    let lastPartitionSize = 0;
     let partitions: S[][] = [];
     if (reachableAccepting.length >= 1) {
         partitions.push(reachableAccepting);
@@ -264,7 +296,35 @@ function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
     if (reachableRejecting.length >= 1) {
         partitions.push(reachableRejecting);
     }
-    while (partitions.length > lastParitionSize) {
+
+    const newPartitions: S[][] = [];
+    for (const oldPartition of partitions) {
+        const newPartitionsSplit: S[][] = [];
+        for (const state of oldPartition) {
+            const stateNames = nameMap.get(state);
+            const matchedNewPartition = newPartitionsSplit.find((newPartition) => {
+                const partitionState = newPartition[0];
+                const partitionNames = nameMap.get(partitionState);
+                return stateNames === undefined
+                    && partitionNames === undefined
+                    || stateNames !== undefined
+                    && partitionNames !== undefined
+                    && Array.from(stateNames).every((n) => partitionNames.has(n)) && Array.from(partitionNames).every((n) => stateNames.has(n));
+            });
+            if (!matchedNewPartition) {
+                newPartitionsSplit.push([state]);
+            } else {
+                matchedNewPartition.push(state);
+            }
+        }
+        for (const partition of newPartitionsSplit) {
+            newPartitions.push(partition);
+        }
+    }
+    lastPartitionSize = partitions.length;
+    partitions = newPartitions;
+
+    while (partitions.length > lastPartitionSize) {
         const partitionsNodeMap = new Map<S, S[]>(partitions.map((partition) => partition.map((state): [S, S[]] => [state, partition])).reduce((entries, partition) => [...entries, ...partition]));
         const newPartitions: S[][] = [];
         for (const oldPartition of partitions) {
@@ -293,7 +353,7 @@ function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
             }
         }
 
-        lastParitionSize = partitions.length;
+        lastPartitionSize = partitions.length;
         partitions = newPartitions;
     }
 
@@ -303,9 +363,19 @@ function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
             .reduce((entries, partition) => [...entries, ...partition])
     );
 
+    const names: [S[], string][] = [];
+    for (const [s, n] of fsm.names) {
+        const partition = partitionsNodeMap.get(s)!;
+        if (names.some(([s2, n2]) => s2 === partition && n2 === n)) {
+            continue;
+        }
+        names.push([partition, n]);
+    }
+
     return {
         accepting: partitions.filter((partition) => accepting.has(partition[0])),
         initial: partitionsNodeMap.get(fsm.initial)!,
+        names,
         transitions: fsm.transitions
             .filter(([s, i, t]) => reachableSet.has(s))
             .filter(([s, i, t]) => partitionsNodeMap.get(s)![0] === s)
@@ -330,6 +400,7 @@ function toNumberState<S, T>(fsm: FSM<S, T>): FSM<number, T> {
     return {
         accepting: fsm.accepting.map((s) => map.get(s)!),
         initial: map.get(fsm.initial)!,
+        names: fsm.names.map(([s, n]): [number, string] => [map.get(s)!, n]),
         transitions: fsm.transitions.map(([s, i, t]): [number, T, number] => [map.get(s)!, i, map.get(t)!])
     };
 }
@@ -354,26 +425,29 @@ function alternatives(...terms: Term[]): Alternatives {
     return { type: "alternatives", terms };
 }
 
+function named(name: string, term: Term): Named {
+    return { type: "named", name, term };
+}
+
 // const grammar = sequence(
-//     any(choice(terminal("a"), terminal("b"))),
-//     terminal("a"),
-//     terminal("b"),
-//     terminal("b"),
-//     any(choice(terminal("a"), terminal("b")))
+//     named("prefix", any(choice(terminal("a"), terminal("b")))),
+//     named("body", sequence(terminal("a"), terminal("b"), terminal("b"))),
+//     named("postfix", any(choice(terminal("a"), terminal("b"))))
 // );
 
 const grammar = alternatives(
-    sequence(terminal("i"), terminal("f")),
-    sequence(terminal("i"), terminal("n"), terminal("t"))
+    named("if", sequence(terminal("i"), terminal("f"))),
+    named("int", sequence(terminal("i"), terminal("n"), terminal("t"))),
+    // named("identifier", sequence(alternatives(..."abcdefghijklmnopqrstuvwxyz".split("").map(terminal)), any(alternatives(..."abcdefghijklmnopqrstuvwxyz_0123456789".split("").map(terminal)))))
+    named("identifier", sequence(terminal("a-z"), any(terminal("a-z_0-9"))))
 );
 
 const [_, fsm] = toFSM(grammar);
 const dfa = toNumberState(toDeterministic(fsm));
 // TODO: remove deadlocks (state from which no final state is reachable)
-// TODO: before minimizing, ensure accepting states have "names" and treat differently named states as separate partitions in the minimization.
-// const min = toNumberState(toMinimal(dfa));
-const dot = toDot(dfa);
+const min = toNumberState(toMinimal(dfa));
+const dot = toDot(min);
 
-console.log(dot);
+fs.writeFileSync(__dirname + "/output.dot", dot);
 
 export declare const x: number;
