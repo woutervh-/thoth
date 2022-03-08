@@ -529,6 +529,7 @@ const min = toNumberState(toMinimal(dfa));
 const col = toCollapsed(min);
 const dot = toDot(col, { stateToString: (s) => s.toString(), inputToString: (i) => `${Buffer.from([i[0]]).toString()}-${Buffer.from([i[1]]).toString()}` });
 
+fs.writeFileSync(__dirname + "/fsm.json", JSON.stringify(col, null, 2));
 fs.writeFileSync(__dirname + "/fsm.dot", dot);
 
 class Lexer {
@@ -577,7 +578,7 @@ class Lexer {
     }
 }
 
-const lexer = new Lexer(min);
+const lexer = new Lexer(col);
 const input = "if;int;i;ifi;;;";
 for (const c of Buffer.from(input)) {
     lexer.write(c);
