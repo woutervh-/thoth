@@ -210,9 +210,9 @@ function toFSM<T>(term: Term<T>): [number, FSM<number, T>] {
     }
 }
 
-function toNormalizedTransitions<S>(fsm: FSM<S, [number, number]>) {
-    const ranges = fsm.transitions.map(([s, i, t]) => i).sort((a, b) => a[0] - b[0]);
-    console.log(ranges.map(([a, b]) => `${Buffer.from([a])}-${Buffer.from([b])}`));
+function toNormalizedTransitions<S>(fsm: FSM<S, [number, number]>): FSM<S, [number, number]> {
+    // const ranges = fsm.transitions.map(([s, i, t]) => i).sort((a, b) => a[0] - b[0]);
+    // console.log(ranges.map(([a, b]) => `${Buffer.from([a])}-${Buffer.from([b])}`));
 
     const i0s = fsm.transitions.map(([s, i, t]): [number, number] => [1, i[0]]);
     const i1s = fsm.transitions.map(([s, i, t]): [number, number] => [-1, i[1]]);
@@ -238,9 +238,48 @@ function toNormalizedTransitions<S>(fsm: FSM<S, [number, number]>) {
         open += is[i][0];
     }
 
-    console.log(answer.map(([a, b]) => `${Buffer.from([a])}-${Buffer.from([b])}`));
+    // console.log(answer.map(([a, b]) => `${Buffer.from([a])}-${Buffer.from([b])}`));
 
-    return fsm;
+    const transitions = fsm.transitions.map(([s, i, t]) => answer.filter((ii) => ii[0] <= i[1] && ii[1] >= i[0]).map((ii): [S, [number, number], S] => [s, ii, t])).flat();
+    const accepting = fsm.accepting;
+    const initial = fsm.initial;
+    const names = fsm.names;
+
+    return { accepting, initial, names, transitions };
+}
+
+function toCollapsed<S>(fsm: FSM<S, [number, number]>): FSM<S, [number, number]> {
+    const transitions: [S, [number, number], S][] = [];
+
+    for (const transition of fsm.transitions) {
+        const overlappingIndices: number[] = [];
+        for (let i = 0; i < transitions.length; i++) {
+            if (transitions[i][0] === transition[0] && transitions[i][2] === transition[2] && transition[1][0] <= transitions[i][1][1] + 1 && transition[1][1] >= transitions[i][1][0] - 1) {
+                overlappingIndices.push(i);
+            }
+        }
+        overlappingIndices.sort((a, b) => b - a);
+        if (overlappingIndices.length >= 1) {
+            let m = transition[1][0];
+            let n = transition[1][1];
+            for (const i of overlappingIndices) {
+                m = Math.min(m, transitions[i][1][0]);
+                n = Math.max(n, transitions[i][1][1]);
+            }
+            for (const i of overlappingIndices) {
+                transitions.splice(i, 1);
+            }
+            transitions.push([transition[0], [m, n], transition[2]]);
+        } else {
+            transitions.push(transition);
+        }
+    }
+
+    const accepting = fsm.accepting;
+    const initial = fsm.initial;
+    const names = fsm.names;
+
+    return { accepting, initial, names, transitions };
 }
 
 function toDeterministic<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
@@ -479,8 +518,9 @@ const [_, fsm] = toFSM(grammar);
 const nor = toNormalizedTransitions(fsm);
 const dfa = toNumberState(toDeterministic(nor));
 // TODO: remove deadlocks (state from which no final state is reachable)
-const min = toNumberState(fsm);
-const dot = toDot(min, { stateToString: (s) => s.toString(), inputToString: (i) => `${Buffer.from([i[0]]).toString()}-${Buffer.from([i[1]]).toString()}` });
+const min = toNumberState(toMinimal(dfa));
+const col = toCollapsed(min);
+const dot = toDot(col, { stateToString: (s) => s.toString(), inputToString: (i) => `${Buffer.from([i[0]]).toString()}-${Buffer.from([i[1]]).toString()}` });
 
 fs.writeFileSync(__dirname + "/fsm.dot", dot);
 
