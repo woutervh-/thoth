@@ -520,15 +520,15 @@ function named(name: string, term: Term<[number, number]>): Named<[number, numbe
 // );
 
 const grammar = alternatives(
-    named("*", terminal([0x2A, 0x2A])), // *
-    named("+", terminal([0x2B, 0x2B])), // +
-    named("-", terminal([0x2D, 0x2D])), // -
-    named("/", terminal([0x2F, 0x2F])), // /
-    named("++", sequence(terminal([0x2B, 0x2B]), terminal([0x2B, 0x2B]))), // ++
-    named("--", sequence(terminal([0x2D, 0x2D]), terminal([0x2D, 0x2D]))), // --
-    named("if", sequence(terminal([0x69, 0x69]), terminal([0x66, 0x66]))), // if
-    named("else", sequence(terminal([0x65, 0x65]), terminal([0x6C, 0x6C]), terminal([0x73, 0x73]), terminal([0x65, 0x65]))), // else
-    named("int", sequence(terminal([0x69, 0x69]), terminal([0x6E, 0x6E]), terminal([0x74, 0x74]))), // int
+    named("*", terminal([0x2A, 0x2A])),
+    named("+", terminal([0x2B, 0x2B])),
+    named("-", terminal([0x2D, 0x2D])),
+    named("/", terminal([0x2F, 0x2F])),
+    named("++", sequence(terminal([0x2B, 0x2B]), terminal([0x2B, 0x2B]))),
+    named("--", sequence(terminal([0x2D, 0x2D]), terminal([0x2D, 0x2D]))),
+    named("if", sequence(terminal([0x69, 0x69]), terminal([0x66, 0x66]))),
+    named("else", sequence(terminal([0x65, 0x65]), terminal([0x6C, 0x6C]), terminal([0x73, 0x73]), terminal([0x65, 0x65]))),
+    named("int", sequence(terminal([0x69, 0x69]), terminal([0x6E, 0x6E]), terminal([0x74, 0x74]))),
     named("identifier", sequence(terminal([0x61, 0x7A]), any(alternatives(terminal([0x61, 0x7A]), terminal([0x5F, 0x5F]), terminal([0x30, 0x39]))))), // a-z(a-z_0-9)+
     named("semicolon", terminal([0x3B, 0x3B]))
 );
