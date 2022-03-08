@@ -513,12 +513,6 @@ function named(name: string, term: Term<[number, number]>): Named<[number, numbe
     return { type: "named", name, term };
 }
 
-// const grammar = sequence(
-//     named("prefix", any(choice(terminal("a"), terminal("b")))),
-//     named("body", sequence(terminal("a"), terminal("b"), terminal("b"))),
-//     named("postfix", any(choice(terminal("a"), terminal("b"))))
-// );
-
 const grammar = alternatives(
     named("*", terminal([0x2A, 0x2A])),
     named("+", terminal([0x2B, 0x2B])),
