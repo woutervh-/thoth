@@ -17,6 +17,9 @@ interface FSM<S, T> {
     transitions: [S, T, S][];
 }
 
+/**
+ * Print a FSM in dot format for visualization.
+ */
 function toDot<S, T>(fsm: FSM<S, T>, options: { stateToString: (s: S) => string, inputToString: (i: T) => string }): string {
     const lines: string[] = [];
     // header
@@ -210,6 +213,10 @@ function toFSM<T>(term: Term<T>): [number, FSM<number, T>] {
     }
 }
 
+/**
+ * Normalize all transitions such that each transition's input is a globally unique range of numbers.
+ * Can split a transition into multiple ones.
+ */
 function toNormalizedTransitions<S>(fsm: FSM<S, [number, number]>): FSM<S, [number, number]> {
     const i0s = fsm.transitions.map(([s, i, t]): [number, number] => [1, i[0]]);
     const i1s = fsm.transitions.map(([s, i, t]): [number, number] => [-1, i[1]]);
@@ -243,6 +250,9 @@ function toNormalizedTransitions<S>(fsm: FSM<S, [number, number]>): FSM<S, [numb
     return { accepting, initial, names, transitions };
 }
 
+/**
+ * Collapses each state's outgoing transitions to the smallest possible set of transitions such that their ranges don't overlap.
+ */
 function toCollapsed<S>(fsm: FSM<S, [number, number]>): FSM<S, [number, number]> {
     const transitions: [S, [number, number], S][] = [];
 
@@ -277,6 +287,9 @@ function toCollapsed<S>(fsm: FSM<S, [number, number]>): FSM<S, [number, number]>
     return { accepting, initial, names, transitions };
 }
 
+/**
+ * Turn a non-deterministic finite automaton (NFA) to a deterministic finite automaton (DFA).
+ */
 function toDeterministic<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
     const alphabet = new Set(fsm.transitions.map(([s, i, t]) => i));
     const initialStateSet = new Set([fsm.initial]);
@@ -322,6 +335,10 @@ function toDeterministic<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
     return { accepting, initial, names, transitions };
 }
 
+/**
+ * Minimizes a deterministic finite automaton (DFA).
+ * Using Hopcroft's algorithm.
+ */
 function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
     const reachableSet = new Set<S>();
     const queue = [fsm.initial];
