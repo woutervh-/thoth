@@ -211,34 +211,54 @@ function toFSM<T>(term: Term<T>): [number, FSM<number, T>] {
 }
 
 function toNormalizedTransitions<S>(fsm: FSM<S, [number, number]>) {
+    const s0s = fsm.transitions.map(([s, i, t]): [0 | 1, number] => [0, i[0]]);
+    const s1s = fsm.transitions.map(([s, i, t]): [0 | 1, number] => [1, i[1]]);
+    const ss = [...s0s, ...s1s].sort((a, b) => a[1] - b[1]);
+
     const ranges = fsm.transitions.map(([s, i, t]) => i).sort((a, b) => a[0] - b[0]);
-    const stack: [number, number][] = [];
-    for (const current of ranges) {
-        if (stack.length < 1) {
-            stack.push(current);
-            continue;
-        }
 
-        const previous = stack[stack.length - 1];
-        if (previous[1] < current[0]) {
-            stack.push(current);
-            continue;
-        }
+    console.log(ranges.map(([a, b]) => `${Buffer.from([a])}-${Buffer.from([b])}`));
 
-        const s0 = previous[0];
-        const s2 = current[0];
-        const s3 = Math.min(previous[1], current[1]);
-        const s5 = Math.max(previous[1], current[1]);
-        const s1 = s2 - 1;
-        const s4 = s3 + 1;
-        stack[stack.length - 1] = [s0, s1];
-        stack.push([s2, s3]);
-        stack.push([s4, s5]);
+    const answer: [number, number][] = [];
+    let open: [number, number][] = [[-1, -1], ranges[0]];
+    for (let i = 1; i < ranges.length; i++) {
+        const left = open[0];
+        const right = open[1];
+        const current = ranges[i];
+
+
+
+        if (current[0] === open[0]) {
+            if (current[1] > open[1]) {
+                answer.push([open[0], open[1]]);
+                open = [open[1] + 1, current[1]];
+            } else if (current[1] < open[1]) {
+                answer.push([current[0], current[1]]);
+                open = [current[1] + 1, open[1]];
+            }
+        } else if (current[0] > open[1]) {
+            answer.push([open[0], open[1]]);
+            open = [current[0], current[1]];
+        } else {
+            if (current[1] > open[1]) {
+                answer.push([open[0], current[0] - 1]);
+                answer.push([current[0], open[1]]);
+                open = [open[1] + 1, current[1]];
+            } else if (current[1] < open[1]) {
+                answer.push([open[0], current[0] - 1]);
+                answer.push([current[0], current[1]]);
+                open = [current[1] + 1, open[1]];
+            } else {
+                answer.push([open[0], current[0] - 1]);
+                open = [current[0], current[1]];
+            }
+        }
     }
+    answer.push(...open);
 
-    // TODO: algorithm doesn't work for nested ranges like [ [ [ ] ] ]
-    // TODO: maybe needs n^2 algo after all?
-    // TODO: map FSM to new transitions
+    console.log(answer.map(([a, b]) => `${Buffer.from([a])}-${Buffer.from([b])}`));
+
+    return fsm;
 }
 
 function toDeterministic<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
