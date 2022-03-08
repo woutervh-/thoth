@@ -322,7 +322,7 @@ function toDeterministic<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
     const accepting = Array.from(markedSets).filter((stateSet) => fsm.accepting.some((s) => stateSet.has(s))).map((stateSet) => setToArray.get(stateSet)!);
     const initial = setToArray.get(initialStateSet)!;
     const transitions = setTransitions.map(([s, i, t]): [S[], T, S[]] => [setToArray.get(s)!, i, setToArray.get(t)!]);
-    const names = accepting.map((ss) => fsm.names.filter(([s, n]) => ss.includes(s)).map(([s, n]): [S[], string] => [ss, n])).reduce((prev, current) => [...prev, ...current]);
+    const names = accepting.map((ss) => fsm.names.filter(([s, n]) => ss.includes(s)).map(([s, n]): [S[], string] => [ss, n])).flat();
 
     return { accepting, initial, names, transitions };
 }
@@ -397,7 +397,7 @@ function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
     partitions = newPartitions;
 
     while (partitions.length > lastPartitionSize) {
-        const partitionsNodeMap = new Map<S, S[]>(partitions.map((partition) => partition.map((state): [S, S[]] => [state, partition])).reduce((entries, partition) => [...entries, ...partition]));
+        const partitionsNodeMap = new Map<S, S[]>(partitions.map((partition) => partition.map((state): [S, S[]] => [state, partition])).flat());
         const newPartitions: S[][] = [];
         for (const oldPartition of partitions) {
             const newPartitionsSplit: S[][] = [];
@@ -432,7 +432,7 @@ function toMinimal<S, T>(fsm: FSM<S, T>): FSM<S[], T> {
     const partitionsNodeMap: Map<S, S[]> = new Map(
         partitions
             .map((partition) => partition.map<[S, S[]]>((state) => [state, partition]))
-            .reduce((entries, partition) => [...entries, ...partition])
+            .flat()
     );
 
     const names: [S[], string][] = [];
@@ -508,7 +508,14 @@ function named(name: string, term: Term<[number, number]>): Named<[number, numbe
 // );
 
 const grammar = alternatives(
+    named("*", terminal([0x2A, 0x2A])), // *
+    named("+", terminal([0x2B, 0x2B])), // +
+    named("-", terminal([0x2D, 0x2D])), // -
+    named("/", terminal([0x2F, 0x2F])), // /
+    named("++", sequence(terminal([0x2B, 0x2B]), terminal([0x2B, 0x2B]))), // ++
+    named("--", sequence(terminal([0x2D, 0x2D]), terminal([0x2D, 0x2D]))), // --
     named("if", sequence(terminal([0x69, 0x69]), terminal([0x66, 0x66]))), // if
+    named("else", sequence(terminal([0x65, 0x65]), terminal([0x6C, 0x6C]), terminal([0x73, 0x73]), terminal([0x65, 0x65]))), // else
     named("int", sequence(terminal([0x69, 0x69]), terminal([0x6E, 0x6E]), terminal([0x74, 0x74]))), // int
     named("identifier", sequence(terminal([0x61, 0x7A]), any(alternatives(terminal([0x61, 0x7A]), terminal([0x5F, 0x5F]), terminal([0x30, 0x39]))))), // a-z(a-z_0-9)+
     named("semicolon", terminal([0x3B, 0x3B]))
@@ -525,12 +532,12 @@ const dot = toDot(col, { stateToString: (s) => s.toString(), inputToString: (i) 
 fs.writeFileSync(__dirname + "/fsm.dot", dot);
 
 class Lexer {
-    private stack: number[][];
+    private state: number;
     private token: number[];
 
     public constructor(private fsm: FSM<number, [number, number]>) {
+        this.state = fsm.initial;
         this.token = [];
-        this.stack = [[this.fsm.initial]];
     }
 
     public write(input?: number) {
@@ -539,41 +546,33 @@ class Lexer {
                 return;
             }
 
-            const accepting = this.stack[this.stack.length - 1].filter((s) => this.fsm.accepting.includes(s));
-            const names = accepting.map((s) => this.fsm.names.filter(([s2, n]) => s === s2).map(([s2, n]) => n)).reduce((prev, current) => [...prev, ...current]);
-
-            console.log("Emit:", this.token, names);
-
-            return;
-        }
-
-        const newStates: number[] = [];
-        for (const state of this.stack[this.stack.length - 1]) {
-            newStates.push(...this.fsm.transitions.filter(([s, i, t]) => s === state && i[0] <= input && input <= i[1]).map(([s, i, t]) => t));
-        }
-
-        if (newStates.length < 1) {
-            while (this.stack.length >= 1 && !this.stack[this.stack.length - 1].some((s) => this.fsm.accepting.includes(s))) {
-                this.stack.pop();
-                this.token.pop();
+            const accepting = this.fsm.accepting.includes(this.state);
+            if (!accepting) {
+                throw new Error("EOF in non-accepting state.");
             }
 
-            if (this.stack.length < 1) {
-                throw new Error("No accepting states.");
-            }
-
-            const accepting = this.stack[this.stack.length - 1].filter((s) => this.fsm.accepting.includes(s));
-            const names = accepting.map((s) => this.fsm.names.filter(([s2, n]) => s === s2).map(([s2, n]) => n)).reduce((prev, current) => [...prev, ...current]);
-
+            const names = this.fsm.names.filter(([s2, n]) => this.state === s2).map(([s2, n]) => n).flat();
             console.log("Emit:", this.token, names);
-
-            this.token = [];
-            this.stack = [[this.fsm.initial]];
-
-            this.write(input);
         } else {
-            this.token.push(input);
-            this.stack.push(newStates);
+            const transition = this.fsm.transitions.find(([s, i, t]) => s === this.state && i[0] <= input && input <= i[1]);
+
+            if (transition) {
+                this.token.push(input);
+                this.state = transition[2];
+            } else {
+                const accepting = this.fsm.accepting.includes(this.state);
+                if (!accepting) {
+                    throw new Error("No valid transitions in non-accepting state.");
+                }
+
+                const names = this.fsm.names.filter(([s2, n]) => this.state === s2).map(([s2, n]) => n).flat();
+                console.log("Emit:", this.token, names);
+
+                this.token = [];
+                this.state = this.fsm.initial;
+
+                this.write(input);
+            }
         }
     }
 }
