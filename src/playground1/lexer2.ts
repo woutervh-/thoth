@@ -211,9 +211,6 @@ function toFSM<T>(term: Term<T>): [number, FSM<number, T>] {
 }
 
 function toNormalizedTransitions<S>(fsm: FSM<S, [number, number]>): FSM<S, [number, number]> {
-    // const ranges = fsm.transitions.map(([s, i, t]) => i).sort((a, b) => a[0] - b[0]);
-    // console.log(ranges.map(([a, b]) => `${Buffer.from([a])}-${Buffer.from([b])}`));
-
     const i0s = fsm.transitions.map(([s, i, t]): [number, number] => [1, i[0]]);
     const i1s = fsm.transitions.map(([s, i, t]): [number, number] => [-1, i[1]]);
     const is = [...i0s, ...i1s].sort((a, b) => a[1] - b[1]);
@@ -237,8 +234,6 @@ function toNormalizedTransitions<S>(fsm: FSM<S, [number, number]>): FSM<S, [numb
         }
         open += is[i][0];
     }
-
-    // console.log(answer.map(([a, b]) => `${Buffer.from([a])}-${Buffer.from([b])}`));
 
     const transitions = fsm.transitions.map(([s, i, t]) => answer.filter((ii) => ii[0] <= i[1] && ii[1] >= i[0]).map((ii): [S, [number, number], S] => [s, ii, t])).flat();
     const accepting = fsm.accepting;
@@ -533,12 +528,34 @@ fs.writeFileSync(__dirname + "/fsm.json", JSON.stringify(col, null, 2));
 fs.writeFileSync(__dirname + "/fsm.dot", dot);
 
 class Lexer {
-    private state: number;
     private token: number[];
+    private state: number;
 
     public constructor(private fsm: FSM<number, [number, number]>) {
-        this.state = fsm.initial;
         this.token = [];
+        this.state = fsm.initial;
+    }
+
+    private next(input: number) {
+        const transition = this.fsm.transitions.find(([s, i, t]) => s === this.state && i[0] <= input && input <= i[1]);
+
+        if (!transition) {
+            return;
+        }
+
+        return transition[2];
+    }
+
+    private emit() {
+        const names = this.fsm.names.filter(([s2, n]) => this.state === s2).map(([s2, n]) => n).flat();
+        console.log("Emit:", this.token, names);
+
+        this.token = [];
+        this.state = this.fsm.initial;
+    }
+
+    private accepting() {
+        return this.fsm.accepting.includes(this.state);
     }
 
     public write(input?: number) {
@@ -547,31 +564,23 @@ class Lexer {
                 return;
             }
 
-            const accepting = this.fsm.accepting.includes(this.state);
-            if (!accepting) {
+            if (!this.accepting()) {
                 throw new Error("EOF in non-accepting state.");
             }
 
-            const names = this.fsm.names.filter(([s2, n]) => this.state === s2).map(([s2, n]) => n).flat();
-            console.log("Emit:", this.token, names);
+            this.emit();
         } else {
-            const transition = this.fsm.transitions.find(([s, i, t]) => s === this.state && i[0] <= input && input <= i[1]);
+            const next = this.next(input);
 
-            if (transition) {
+            if (next) {
                 this.token.push(input);
-                this.state = transition[2];
+                this.state = next;
             } else {
-                const accepting = this.fsm.accepting.includes(this.state);
-                if (!accepting) {
+                if (!this.accepting()) {
                     throw new Error("No valid transitions in non-accepting state.");
                 }
 
-                const names = this.fsm.names.filter(([s2, n]) => this.state === s2).map(([s2, n]) => n).flat();
-                console.log("Emit:", this.token, names);
-
-                this.token = [];
-                this.state = this.fsm.initial;
-
+                this.emit();
                 this.write(input);
             }
         }
