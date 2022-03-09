@@ -523,7 +523,7 @@ const grammar = alternatives(
     named("if", sequence(terminal([0x69, 0x69]), terminal([0x66, 0x66]))),
     named("else", sequence(terminal([0x65, 0x65]), terminal([0x6C, 0x6C]), terminal([0x73, 0x73]), terminal([0x65, 0x65]))),
     named("int", sequence(terminal([0x69, 0x69]), terminal([0x6E, 0x6E]), terminal([0x74, 0x74]))),
-    named("identifier", sequence(terminal([0x61, 0x7A]), any(alternatives(terminal([0x61, 0x7A]), terminal([0x5F, 0x5F]), terminal([0x30, 0x39]))))), // a-z(a-z_0-9)+
+    named("identifier", sequence(terminal([0x61, 0x7A]), any(alternatives(terminal([0x61, 0x7A]), terminal([0x5F, 0x5F]), terminal([0x30, 0x39]))))), // a-z(a-z_0-9)*
     named("semicolon", terminal([0x3B, 0x3B]))
 );
 

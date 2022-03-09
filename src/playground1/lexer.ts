@@ -438,7 +438,7 @@ function named(name: string, term: Term<[number, number]>): Named<[number, numbe
 const grammar = alternatives(
     named("if", sequence(terminal([0x69, 0x69]), terminal([0x66, 0x66]))), // if
     named("int", sequence(terminal([0x69, 0x69]), terminal([0x6E, 0x6E]), terminal([0x74, 0x74]))), // int
-    named("identifier", sequence(terminal([0x61, 0x7A]), any(alternatives(terminal([0x61, 0x7A]), terminal([0x5F, 0x5F]), terminal([0x30, 0x39]))))), // a-z(a-z_0-9)+
+    named("identifier", sequence(terminal([0x61, 0x7A]), any(alternatives(terminal([0x61, 0x7A]), terminal([0x5F, 0x5F]), terminal([0x30, 0x39]))))), // a-z(a-z_0-9)*
     named("semicolon", terminal([0x3B, 0x3B]))
 );
 
