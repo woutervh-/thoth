@@ -1,12 +1,12 @@
-import { Grammar, Term } from './grammar';
+import { Grammar, Term } from "./grammar";
 
 export class Printer {
     public static stringifySequence<T>(sequence: Term<T>[], activeTermIndex: number) {
         let sequenceString = sequence.length >= 1
-            ? sequence.map((term, index) => (activeTermIndex === index ? '•' : '') + (term.type === 'non-terminal' ? term.name : term.terminal)).join(' ')
-            : 'ε';
+            ? sequence.map((term, index) => (activeTermIndex === index ? "•" : "") + (term.type === "non-terminal" ? term.name : term.terminal)).join(" ")
+            : "ε";
         if (activeTermIndex >= sequence.length) {
-            sequenceString += '•';
+            sequenceString += "•";
         }
         return sequenceString;
     }
@@ -20,13 +20,13 @@ export class Printer {
             const sequencesString = grammar[nonTerminal]
                 .map(
                     (sequence) => sequence.length >= 1
-                        ? sequence.map((term) => term.type === 'non-terminal' ? term.name : term.terminal).join(' ')
-                        : 'ε'
+                        ? sequence.map((term) => term.type === "non-terminal" ? term.name : term.terminal).join(" ")
+                        : "ε"
                 )
-                .join(' | ');
+                .join(" | ");
 
             // tslint:disable-next-line:no-console
-            console.log(`${nonTerminal} → ${grammar[nonTerminal].length >= 1 ? sequencesString : '∅'}`);
+            console.log(`${nonTerminal} → ${grammar[nonTerminal].length >= 1 ? sequencesString : "∅"}`);
         }
     }
 }
