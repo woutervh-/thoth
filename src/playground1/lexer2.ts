@@ -535,8 +535,8 @@ const min = toNumberState(toMinimal(dfa));
 const col = toCollapsed(min);
 const dot = toDot(col, { stateToString: (s) => s.toString(), inputToString: (i) => `${Buffer.from([i[0]]).toString()}-${Buffer.from([i[1]]).toString()}` });
 
-fs.writeFileSync(__dirname + "/fsm.json", JSON.stringify(col, null, 2));
-fs.writeFileSync(__dirname + "/fsm.dot", dot);
+fs.writeFileSync(__dirname + "/lexer-fsm.json", JSON.stringify(col, null, 2));
+fs.writeFileSync(__dirname + "/lexer-fsm.dot", dot);
 
 class Lexer {
     private token: number[];

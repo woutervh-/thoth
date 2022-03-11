@@ -3,10 +3,12 @@ import * as fs from "fs";
 // -----------------------------------------------------------
 
 interface NonTerminal {
-    nonTerminal: string;
+    type: "non-terminal";
+    name: string;
 }
 
 interface Terminal<T> {
+    type: "terminal";
     terminal: T;
 }
 
@@ -23,7 +25,7 @@ function stringifyGrammar<T>(grammar: Grammar<T>) {
             return grammar.rules[nonTerminal].length >= 1
                 ? `${nonTerminal} → ${grammar.rules[nonTerminal]
                     .map((sequence) => sequence.length >= 1
-                        ? sequence.map((term) => "nonTerminal" in term ? term.nonTerminal : term.terminal).join(" ")
+                        ? sequence.map((term) => term.type === "non-terminal" ? term.name : term.terminal).join(" ")
                         : "ε"
                     )
                     .join(" | ")}`
@@ -32,10 +34,69 @@ function stringifyGrammar<T>(grammar: Grammar<T>) {
         .join("\n");
 }
 
+function stringifyParseState(parseState: ParseState, grammar: Grammar<unknown>) {
+    const sequence = grammar.rules[parseState.nonTerminal][parseState.sequence];
+    const activeTermIndex = parseState.term;
+    let sequenceString = sequence.length >= 1
+        ? sequence.map((term, index) => (activeTermIndex === index ? "•" : "") + (term.type === "non-terminal" ? term.name : term.terminal)).join(" ")
+        : "ε";
+    if (activeTermIndex >= sequence.length) {
+        sequenceString += "•";
+    }
+    return sequenceString;
+}
+
+function toDot(derivations: ParseState[], grammar: Grammar<unknown>): string {
+    const lines: string[] = [];
+    // header
+    lines.push("digraph parse_states {");
+    lines.push("ratio=fill;");
+    lines.push("node [style=fill];");
+
+    const nameMap = new Map<ParseState, string>();
+    const queue = derivations.slice();
+    while (queue.length >= 1) {
+        const derivation = queue.pop()!;
+        if (nameMap.has(derivation)) {
+            continue;
+        }
+        const relatives = derivation.children.slice();
+        if (derivation.parent) {
+            relatives.push(derivation.parent);
+        }
+        for (const relative of relatives) {
+            queue.push(relative);
+        }
+        nameMap.set(derivation, `t${nameMap.size}`);
+    }
+
+    const nodes: string[] = [];
+    const edges: string[] = [];
+    for (const [derivation, name] of nameMap) {
+        for (const child of derivation.children) {
+            edges.push(`${name} -> ${nameMap.get(child)!};`);
+        }
+        const label = stringifyParseState(derivation, grammar).replace(/•/g, "&bull;");
+        let color: string;
+        if (derivation.term >= grammar.rules[derivation.nonTerminal][derivation.sequence].length) {
+            color = "darkgrey";
+        } else {
+            color = "white";
+        }
+        nodes.push(`${name} [fillcolor="${color}", label="${derivation.nonTerminal} &rarr; ${label} (${derivation.token})"];`);
+    }
+
+    lines.push(...edges);
+    lines.push(...nodes);
+    lines.push("}");
+
+    return lines.join("\n");
+}
+
 function sequenceStartsWithNonTerminal<T>(sequence: Term<T>[], nonTerminal: string) {
     if (sequence.length >= 1) {
         const firstTerm = sequence[0];
-        return "nonTerminal" in firstTerm && firstTerm.nonTerminal === nonTerminal;
+        return firstTerm.type === "non-terminal" && firstTerm.name === nonTerminal;
     }
     return false;
 }
@@ -48,10 +109,10 @@ function removeDirectLeftRecursion<T>(oldNonTerminal: string, newNonTerminal: st
         if (sequenceStartsWithNonTerminal(sequence, oldNonTerminal)) {
             const [, ...rest] = sequence;
             newSequencesB.push(rest);
-            newSequencesB.push([...rest, { nonTerminal: newNonTerminal }]);
+            newSequencesB.push([...rest, { type: "non-terminal", name: newNonTerminal }]);
         } else {
             newSequencesA.push(sequence);
-            newSequencesA.push([...sequence, { nonTerminal: newNonTerminal }]);
+            newSequencesA.push([...sequence, { type: "non-terminal", name: newNonTerminal }]);
         }
     }
 
@@ -89,13 +150,120 @@ const grammar: Grammar<string> = {
     initial: "E",
     rules: {
         E: [
-            [{ nonTerminal: "E" }, { terminal: "+" }, { nonTerminal: "E" }],
-            [{ terminal: "a" }]
+            [{ type: "non-terminal", name: "E" }, { type: "terminal", terminal: "+" }, { type: "non-terminal", name: "E" }],
+            [{ type: "terminal", terminal: "a" }]
         ]
     }
 };
 
 const grammarNonRecursive = removeAllLeftRecursion(grammar);
 
-fs.writeFileSync(__dirname + "/grammar.txt", stringifyGrammar(grammar));
-fs.writeFileSync(__dirname + "/grammar-non-recursive.txt", stringifyGrammar(grammarNonRecursive));
+interface ParseState {
+    nonTerminal: string;
+    sequence: number;
+    term: number;
+    token: number;
+    parent: ParseState | null;
+    children: ParseState[];
+}
+
+class Parser<T> {
+    private derivations: ParseState[] = [];
+    private token = 0;
+
+    public constructor(private grammar: Grammar<T>) {
+        for (let i = 0; i < grammar.rules[grammar.initial].length; i++) {
+            this.derivations.push({
+                nonTerminal: grammar.initial,
+                sequence: i,
+                term: 0,
+                token: 0,
+                parent: null,
+                children: []
+            });
+        }
+    }
+
+    public write(token?: T) {
+        const seen: ParseState[] = [];
+        const remaining = this.derivations.slice();
+
+        while (remaining.length >= 1) {
+            const derivation = remaining.pop()!;
+
+            const sequence = this.grammar.rules[derivation.nonTerminal][derivation.sequence];
+
+            if (derivation.term >= sequence.length) {
+                if (derivation.parent) {
+                    remaining.push({
+                        nonTerminal: derivation.parent.nonTerminal,
+                        sequence: derivation.parent.sequence,
+                        term: derivation.parent.term + 1,
+                        token: derivation.parent.token,
+                        parent: derivation.parent.parent,
+                        children: [...derivation.parent.children, derivation]
+                    });
+                }
+            } else {
+                const term = sequence[derivation.term];
+                switch (term.type) {
+                    case "terminal": {
+                        if (term.terminal === token) {
+                            seen.push({
+                                nonTerminal: derivation.nonTerminal,
+                                sequence: derivation.sequence,
+                                term: derivation.term + 1,
+                                token: derivation.token,
+                                parent: derivation.parent,
+                                children: derivation.children
+                            });
+                        }
+                        break;
+                    }
+                    case "non-terminal": {
+                        const rules = this.grammar.rules[term.name];
+                        for (let i = 0; i < rules.length; i++) {
+                            remaining.push({
+                                nonTerminal: term.name,
+                                sequence: i,
+                                term: 0,
+                                token: this.token,
+                                parent: derivation,
+                                children: []
+                            });
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        console.log("==========");
+        console.log(token);
+        console.log("----------");
+        for (const derivation of this.derivations) {
+            console.log(stringifyParseState(derivation, this.grammar));
+        }
+        console.log("----------");
+        for (const derivation of seen) {
+            console.log(stringifyParseState(derivation, this.grammar));
+        }
+
+        this.derivations = seen;
+        this.token += 1;
+    }
+
+    public getDerivations() {
+        return this.derivations;
+    }
+}
+
+const parser = new Parser(grammarNonRecursive);
+parser.write("a");
+parser.write("+");
+parser.write("a");
+// parser.write();
+
+fs.writeFileSync(__dirname + "/parser-grammar.txt", stringifyGrammar(grammar));
+fs.writeFileSync(__dirname + "/parser-grammar-non-recursive.txt", stringifyGrammar(grammarNonRecursive));
+fs.writeFileSync(__dirname + "/parser-states.dot", toDot(parser.getDerivations(), grammarNonRecursive));
