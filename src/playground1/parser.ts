@@ -40,7 +40,7 @@ function stringifyParseState(parseState: ParseState, grammar: Grammar<unknown>) 
     let sequenceString = sequence.length >= 1
         ? sequence.map((term, index) => (activeTermIndex === index ? "•" : "") + (term.type === "non-terminal" ? term.name : term.terminal)).join(" ")
         : "ε";
-    if (activeTermIndex >= sequence.length) {
+    if (activeTermIndex === sequence.length) {
         sequenceString += "•";
     }
     return sequenceString;
@@ -60,9 +60,9 @@ function toDot(derivations: ParseState[], grammar: Grammar<unknown>): string {
         if (nameMap.has(derivation)) {
             continue;
         }
-        const relatives = derivation.children.slice();
+        const relatives = new Set(derivation.children);
         if (derivation.parent) {
-            relatives.push(derivation.parent);
+            relatives.add(derivation.parent);
         }
         for (const relative of relatives) {
             queue.push(relative);
@@ -75,6 +75,9 @@ function toDot(derivations: ParseState[], grammar: Grammar<unknown>): string {
     for (const [derivation, name] of nameMap) {
         for (const child of derivation.children) {
             edges.push(`${name} -> ${nameMap.get(child)!};`);
+        }
+        if (derivation.parent) {
+            edges.push(`${name} -> ${nameMap.get(derivation.parent)!};`);
         }
         const label = stringifyParseState(derivation, grammar).replace(/•/g, "&bull;");
         let color: string;
@@ -163,74 +166,130 @@ interface ParseState {
     sequence: number;
     term: number;
     token: number;
-    parent: ParseState | null;
-    children: ParseState[];
+    parents: Set<ParseState>;
+    children: Set<ParseState>;
 }
 
+// interface ParseState {
+//     nodes: ParseStateNode[];
+//     children: Map<ParseState, ParseState[]>;
+//     parents: Map<ParseState, ParseState[]>;
+// }
+
+// class ParseStateCollection {
+//     private parseStates = new Map<string, ParseState>();
+
+//     public getOrAdd(parseState: ParseState): ParseState {
+//         const id = ParseStateCollection.parseStateToId(parseState);
+//         if (!this.parseStates.has(id)) {
+//             this.parseStates.set(id, parseState);
+//         }
+//         return this.parseStates.get(id)!;
+//     }
+
+//     public clone(): ParseStateCollection {
+//         const clone = new ParseStateCollection();
+//         for (const parseState of this.parseStates.values()) {
+//             clone.getOrAdd(parseState);
+//         }
+//         return clone;
+//     }
+
+//     public size(): number {
+//         return this.parseStates.size;
+//     }
+
+//     public pop(): ParseState | null {
+//         const next = this.parseStates.keys().next();
+//         if (next.done) {
+//             return null;
+//         } else {
+//             const parseState = this.parseStates.get(next.value)!;
+//             this.parseStates.delete(next.value);
+//             return parseState;
+//         }
+//     }
+
+//     public slice(): ParseState[] {
+//         return Array.from(this.parseStates.values());
+//     }
+
+//     private static parseStateToId(parseState: ParseState): string {
+//         return `${parseState.nonTerminal}-${parseState.sequence}-${parseState.term}-${parseState.token}`;
+//     }
+// }
+
 class Parser<T> {
-    private derivations: ParseState[] = [];
+    private parseStates: ParseState[] = [];
     private token = 0;
 
     public constructor(private grammar: Grammar<T>) {
         for (let i = 0; i < grammar.rules[grammar.initial].length; i++) {
-            this.derivations.push({
+            this.parseStates.push({
                 nonTerminal: grammar.initial,
                 sequence: i,
                 term: 0,
                 token: 0,
-                parent: null,
-                children: []
+                parents: new Set(),
+                children: new Set()
             });
         }
     }
 
     public write(token?: T) {
-        const seen: ParseState[] = [];
-        const remaining = this.derivations.slice();
+        const next: ParseState[] = [];
+        const remaining = this.parseStates.slice();
 
         while (remaining.length >= 1) {
-            const derivation = remaining.pop()!;
+            const current = remaining.pop()!;
 
-            const sequence = this.grammar.rules[derivation.nonTerminal][derivation.sequence];
+            const sequence = this.grammar.rules[current.nonTerminal][current.sequence];
 
-            if (derivation.term >= sequence.length) {
-                if (derivation.parent) {
-                    remaining.push({
-                        nonTerminal: derivation.parent.nonTerminal,
-                        sequence: derivation.parent.sequence,
-                        term: derivation.parent.term + 1,
-                        token: derivation.parent.token,
-                        parent: derivation.parent.parent,
-                        children: [...derivation.parent.children, derivation]
+            if (current.term >= sequence.length) {
+                if (current.parent) {
+                    const parentTerm = this.grammar.rules[current.parent.nonTerminal][current.parent.sequence][current.parent.term];
+                    if (parentTerm && parentTerm.type === "non-terminal" && parentTerm.name === current.nonTerminal) {
+                        current.parent.term += 1;
+                    }
+                    Parser.
+                    const parent: ParseState = remaining.getOrAdd({
+                        nonTerminal: current.parent.nonTerminal,
+                        sequence: current.parent.sequence,
+                        term: current.parent.term + 1,
+                        token: current.parent.token,
+                        parent: current.parent.parent,
+                        children: new Set()
                     });
+                    parent.children.add(current);
+                    current.parent = parent;
+                    // parseState.parent.children.add(parseState);
+                    // remainingParseStates.getOrAdd(parseState.parent);
+                } else if (!token) {
+                    Parser.addOrGet(current, next);
                 }
+                // } else if (token) {
             } else {
-                const term = sequence[derivation.term];
+                const term = sequence[current.term];
                 switch (term.type) {
                     case "terminal": {
                         if (term.terminal === token) {
-                            seen.push({
-                                nonTerminal: derivation.nonTerminal,
-                                sequence: derivation.sequence,
-                                term: derivation.term + 1,
-                                token: derivation.token,
-                                parent: derivation.parent,
-                                children: derivation.children
-                            });
+                            current.term += 1;
+                            Parser.addOrGet({ ...current, term: current.term + 1 }, next);
                         }
                         break;
                     }
                     case "non-terminal": {
                         const rules = this.grammar.rules[term.name];
                         for (let i = 0; i < rules.length; i++) {
-                            remaining.push({
+                            const child = Parser.addOrGet({
                                 nonTerminal: term.name,
                                 sequence: i,
                                 term: 0,
                                 token: this.token,
-                                parent: derivation,
-                                children: []
-                            });
+                                parents: new Set(),
+                                children: new Set()
+                            }, remaining);
+                            child.parents.add(current);
                         }
                         break;
                     }
@@ -238,23 +297,38 @@ class Parser<T> {
             }
         }
 
-        console.log("==========");
-        console.log(token);
-        console.log("----------");
-        for (const derivation of this.derivations) {
-            console.log(stringifyParseState(derivation, this.grammar));
-        }
-        console.log("----------");
-        for (const derivation of seen) {
-            console.log(stringifyParseState(derivation, this.grammar));
-        }
+        // console.log("==========");
+        // console.log(token);
+        // console.log("----------");
+        // for (const parseState of this.parseStates) {
+        //     console.log(stringifyParseState(parseState, this.grammar));
+        // }
+        // console.log("----------");
+        // for (const parseState of nextParseStates) {
+        //     console.log(stringifyParseState(parseState, this.grammar));
+        // }
 
-        this.derivations = seen;
+        this.parseStates = next;
         this.token += 1;
     }
 
-    public getDerivations() {
-        return this.derivations;
+    public getDerivations(): ParseState[] {
+        return this.parseStates.slice();
+    }
+
+    private static addOrGet(parseState: ParseState, parseStates: ParseState[]): ParseState {
+        const found = parseStates.find((other) => {
+            return other.nonTerminal === parseState.nonTerminal
+                && other.sequence === parseState.sequence
+                && other.term === parseState.term
+                && other.token === parseState.token;
+        });
+        if (found) {
+            return found;
+        } else {
+            parseStates.push(parseState);
+            return parseState;
+        }
     }
 }
 
@@ -262,7 +336,9 @@ const parser = new Parser(grammarNonRecursive);
 parser.write("a");
 parser.write("+");
 parser.write("a");
-// parser.write();
+parser.write("+");
+parser.write("a");
+parser.write();
 
 fs.writeFileSync(__dirname + "/parser-grammar.txt", stringifyGrammar(grammar));
 fs.writeFileSync(__dirname + "/parser-grammar-non-recursive.txt", stringifyGrammar(grammarNonRecursive));
