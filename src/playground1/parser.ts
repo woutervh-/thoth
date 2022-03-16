@@ -60,10 +60,7 @@ function toDot(derivations: ParseState[], grammar: Grammar<unknown>): string {
         if (nameMap.has(derivation)) {
             continue;
         }
-        const relatives = new Set(derivation.children);
-        if (derivation.parent) {
-            relatives.add(derivation.parent);
-        }
+        const relatives = new Set([...derivation.children, ...derivation.parents]);
         for (const relative of relatives) {
             queue.push(relative);
         }
@@ -73,11 +70,8 @@ function toDot(derivations: ParseState[], grammar: Grammar<unknown>): string {
     const nodes: string[] = [];
     const edges: string[] = [];
     for (const [derivation, name] of nameMap) {
-        for (const child of derivation.children) {
-            edges.push(`${name} -> ${nameMap.get(child)!};`);
-        }
-        if (derivation.parent) {
-            edges.push(`${name} -> ${nameMap.get(derivation.parent)!};`);
+        for (const parent of derivation.parents) {
+            edges.push(`${nameMap.get(parent)!} -> ${name};`);
         }
         const label = stringifyParseState(derivation, grammar).replace(/•/g, "&bull;");
         let color: string;
@@ -220,6 +214,7 @@ interface ParseState {
 // }
 
 class Parser<T> {
+    private parseStatePool: ParseState[] = [];
     private parseStates: ParseState[] = [];
     private token = 0;
 
@@ -246,35 +241,24 @@ class Parser<T> {
             const sequence = this.grammar.rules[current.nonTerminal][current.sequence];
 
             if (current.term >= sequence.length) {
-                if (current.parent) {
-                    const parentTerm = this.grammar.rules[current.parent.nonTerminal][current.parent.sequence][current.parent.term];
-                    if (parentTerm && parentTerm.type === "non-terminal" && parentTerm.name === current.nonTerminal) {
-                        current.parent.term += 1;
-                    }
-                    Parser.
-                    const parent: ParseState = remaining.getOrAdd({
-                        nonTerminal: current.parent.nonTerminal,
-                        sequence: current.parent.sequence,
-                        term: current.parent.term + 1,
-                        token: current.parent.token,
-                        parent: current.parent.parent,
-                        children: new Set()
-                    });
-                    parent.children.add(current);
-                    current.parent = parent;
-                    // parseState.parent.children.add(parseState);
-                    // remainingParseStates.getOrAdd(parseState.parent);
-                } else if (!token) {
-                    Parser.addOrGet(current, next);
+                for (const parent of Array.from(current.parents)) {
+                    const newParent = Parser.addOrGet({ ...parent, term: parent.term + 1 }, this.parseStatePool);
+                    remaining.push(newParent);
+                    current.parents.delete(parent);
+                    parent.children.delete(current);
+                    newParent.children.add(current);
+                    current.parents.add(newParent);
                 }
-                // } else if (token) {
+                // if (!token) {
+                //     Parser.addOrGet(current, next);
+                // }
             } else {
                 const term = sequence[current.term];
                 switch (term.type) {
                     case "terminal": {
                         if (term.terminal === token) {
-                            current.term += 1;
-                            Parser.addOrGet({ ...current, term: current.term + 1 }, next);
+                            const advanced = Parser.addOrGet({ ...current, term: current.term + 1 }, this.parseStatePool);
+                            next.push(advanced);
                         }
                         break;
                     }
@@ -288,8 +272,10 @@ class Parser<T> {
                                 token: this.token,
                                 parents: new Set(),
                                 children: new Set()
-                            }, remaining);
+                            }, this.parseStatePool);
+                            remaining.push(child);
                             child.parents.add(current);
+                            current.children.add(child);
                         }
                         break;
                     }
@@ -297,16 +283,16 @@ class Parser<T> {
             }
         }
 
-        // console.log("==========");
-        // console.log(token);
-        // console.log("----------");
-        // for (const parseState of this.parseStates) {
-        //     console.log(stringifyParseState(parseState, this.grammar));
-        // }
-        // console.log("----------");
-        // for (const parseState of nextParseStates) {
-        //     console.log(stringifyParseState(parseState, this.grammar));
-        // }
+        console.log("==========");
+        console.log(token);
+        console.log("----------");
+        for (const parseState of this.parseStates) {
+            console.log(stringifyParseState(parseState, this.grammar));
+        }
+        console.log("----------");
+        for (const parseState of next) {
+            console.log(stringifyParseState(parseState, this.grammar));
+        }
 
         this.parseStates = next;
         this.token += 1;
@@ -338,7 +324,7 @@ parser.write("+");
 parser.write("a");
 parser.write("+");
 parser.write("a");
-parser.write();
+// parser.write();
 
 fs.writeFileSync(__dirname + "/parser-grammar.txt", stringifyGrammar(grammar));
 fs.writeFileSync(__dirname + "/parser-grammar-non-recursive.txt", stringifyGrammar(grammarNonRecursive));
