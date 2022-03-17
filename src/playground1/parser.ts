@@ -60,7 +60,8 @@ function toDot(derivations: ParseState[], grammar: Grammar<unknown>): string {
         if (nameMap.has(derivation)) {
             continue;
         }
-        const relatives = new Set([...derivation.children, ...derivation.parents]);
+        // const relatives = new Set([...derivation.children, ...derivation.parents]);
+        const relatives = derivation.parents;
         for (const relative of relatives) {
             queue.push(relative);
         }
@@ -161,7 +162,7 @@ interface ParseState {
     term: number;
     token: number;
     parents: Set<ParseState>;
-    children: Set<ParseState>;
+    // children: Set<ParseState>;
 }
 
 // interface ParseState {
@@ -226,7 +227,7 @@ class Parser<T> {
                 term: 0,
                 token: 0,
                 parents: new Set(),
-                children: new Set()
+                // children: new Set()
             });
         }
     }
@@ -242,22 +243,19 @@ class Parser<T> {
 
             if (current.term >= sequence.length) {
                 for (const parent of Array.from(current.parents)) {
-                    const newParent = Parser.addOrGet({ ...parent, term: parent.term + 1 }, this.parseStatePool);
+                    const newParent = Parser.addOrGet({ ...parent, term: parent.term + 1, /*children: new Set()*/ }, this.parseStatePool);
                     remaining.push(newParent);
                     current.parents.delete(parent);
-                    parent.children.delete(current);
-                    newParent.children.add(current);
+                    // parent.children.delete(current);
+                    // newParent.children.add(current);
                     current.parents.add(newParent);
                 }
-                // if (!token) {
-                //     Parser.addOrGet(current, next);
-                // }
             } else {
                 const term = sequence[current.term];
                 switch (term.type) {
                     case "terminal": {
                         if (term.terminal === token) {
-                            const advanced = Parser.addOrGet({ ...current, term: current.term + 1 }, this.parseStatePool);
+                            const advanced = Parser.addOrGet({ ...current, term: current.term + 1, /*children: new Set()*/ }, this.parseStatePool);
                             next.push(advanced);
                         }
                         break;
@@ -271,11 +269,11 @@ class Parser<T> {
                                 term: 0,
                                 token: this.token,
                                 parents: new Set(),
-                                children: new Set()
+                                // children: new Set()
                             }, this.parseStatePool);
                             remaining.push(child);
                             child.parents.add(current);
-                            current.children.add(child);
+                            // current.children.add(child);
                         }
                         break;
                     }
