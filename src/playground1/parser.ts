@@ -326,7 +326,8 @@ parser.write("+");
 parser.printToDot();
 parser.write("a");
 parser.printToDot();
-// parser.write();
+parser.write();
+parser.printToDot();
 
 fs.writeFileSync(__dirname + "/parser-grammar.txt", stringifyGrammar(grammar));
 fs.writeFileSync(__dirname + "/parser-grammar-non-recursive.txt", stringifyGrammar(grammarNonRecursive));
