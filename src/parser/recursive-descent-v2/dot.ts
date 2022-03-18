@@ -58,7 +58,7 @@ export class Dot {
                 const label = Printer.stringifySequence(grammar[node.nonTerminal][node.sequenceIndex], node.termIndex);
                 let color: string;
                 if (node.termIndex >= grammar[node.nonTerminal][node.sequenceIndex].length) {
-                    color = "darkgrey";
+                    color = "grey";
                 } else {
                     color = "white";
                 }
