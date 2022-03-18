@@ -60,8 +60,8 @@ function toDot(derivations: ParseState[], grammar: Grammar<unknown>): string {
         if (nameMap.has(derivation)) {
             continue;
         }
-        // const relatives = new Set([...derivation.children, ...derivation.parents]);
-        const relatives = derivation.parents;
+        const relatives = new Set([...derivation.children, ...derivation.parents]);
+        // const relatives = derivation.parents;
         for (const relative of relatives) {
             queue.push(relative);
         }
@@ -81,7 +81,7 @@ function toDot(derivations: ParseState[], grammar: Grammar<unknown>): string {
         } else {
             color = "white";
         }
-        nodes.push(`${name} [fillcolor="${color}", label="${derivation.nonTerminal} &rarr; ${label} (${derivation.token} / ${derivation.term})"];`);
+        nodes.push(`${name} [fillcolor="${color}", label="${derivation.nonTerminal} &rarr; ${label} (${derivation.start}-${derivation.end})"];`);
     }
 
     lines.push(...edges);
@@ -160,58 +160,11 @@ interface ParseState {
     nonTerminal: string;
     sequence: number;
     term: number;
-    token: number;
+    start: number;
+    end: number | null;
     parents: Set<ParseState>;
+    children: Set<ParseState>;
 }
-
-// interface ParseState {
-//     nodes: ParseStateNode[];
-//     children: Map<ParseState, ParseState[]>;
-//     parents: Map<ParseState, ParseState[]>;
-// }
-
-// class ParseStateCollection {
-//     private parseStates = new Map<string, ParseState>();
-
-//     public getOrAdd(parseState: ParseState): ParseState {
-//         const id = ParseStateCollection.parseStateToId(parseState);
-//         if (!this.parseStates.has(id)) {
-//             this.parseStates.set(id, parseState);
-//         }
-//         return this.parseStates.get(id)!;
-//     }
-
-//     public clone(): ParseStateCollection {
-//         const clone = new ParseStateCollection();
-//         for (const parseState of this.parseStates.values()) {
-//             clone.getOrAdd(parseState);
-//         }
-//         return clone;
-//     }
-
-//     public size(): number {
-//         return this.parseStates.size;
-//     }
-
-//     public pop(): ParseState | null {
-//         const next = this.parseStates.keys().next();
-//         if (next.done) {
-//             return null;
-//         } else {
-//             const parseState = this.parseStates.get(next.value)!;
-//             this.parseStates.delete(next.value);
-//             return parseState;
-//         }
-//     }
-
-//     public slice(): ParseState[] {
-//         return Array.from(this.parseStates.values());
-//     }
-
-//     private static parseStateToId(parseState: ParseState): string {
-//         return `${parseState.nonTerminal}-${parseState.sequence}-${parseState.term}-${parseState.token}`;
-//     }
-// }
 
 class Parser<T> {
     private parseStatePool: ParseState[] = [];
@@ -224,8 +177,10 @@ class Parser<T> {
                 nonTerminal: grammar.initial,
                 sequence: i,
                 term: 0,
-                token: 0,
-                parents: new Set()
+                start: 0,
+                end: null,
+                parents: new Set(),
+                children: new Set()
             });
         }
     }
@@ -241,9 +196,9 @@ class Parser<T> {
 
             if (current.term >= sequence.length) {
                 for (const parent of Array.from(current.parents)) {
-                    const newParent = Parser.addOrGet({ ...parent, parents: new Set(parent.parents), term: parent.term + 1 }, this.parseStatePool);
+                    const newParent = Parser.addOrGet({ ...parent, parents: new Set(parent.parents), children: new Set(parent.children), term: parent.term + 1, end: current.end }, this.parseStatePool);
                     remaining.push(newParent);
-                    current.parents.delete(parent);
+                    newParent.children.add(current);
                     current.parents.add(newParent);
                 }
                 if (!token) {
@@ -254,7 +209,13 @@ class Parser<T> {
                 switch (term.type) {
                     case "terminal": {
                         if (term.terminal === token) {
-                            const advanced = Parser.addOrGet({ ...current, parents: new Set(current.parents), term: current.term + 1 }, this.parseStatePool);
+                            const advanced = Parser.addOrGet({ ...current, term: current.term + 1, end: this.token }, this.parseStatePool);
+                            for (const parent of current.parents) {
+                                parent.children.add(advanced);
+                            }
+                            for (const child of current.children) {
+                                child.parents.add(advanced);
+                            }
                             next.add(advanced);
                         }
                         break;
@@ -266,11 +227,14 @@ class Parser<T> {
                                 nonTerminal: term.name,
                                 sequence: i,
                                 term: 0,
-                                token: this.token,
+                                start: this.token,
+                                end: null,
+                                children: new Set(),
                                 parents: new Set()
                             }, this.parseStatePool);
-                            remaining.push(child);
                             child.parents.add(current);
+                            current.children.add(child);
+                            remaining.push(child);
                         }
                         break;
                     }
@@ -300,7 +264,8 @@ class Parser<T> {
             return other.nonTerminal === parseState.nonTerminal
                 && other.sequence === parseState.sequence
                 && other.term === parseState.term
-                && other.token === parseState.token;
+                && other.start === parseState.start
+                && other.end === parseState.end;
         });
         if (found) {
             return found;
