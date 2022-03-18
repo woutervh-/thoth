@@ -231,7 +231,7 @@ class Parser<T> {
     }
 
     public write(token?: T) {
-        const next: ParseState[] = [];
+        const next = new Set<ParseState>();
         const remaining = this.parseStates.slice();
 
         while (remaining.length >= 1) {
@@ -246,13 +246,16 @@ class Parser<T> {
                     current.parents.delete(parent);
                     current.parents.add(newParent);
                 }
+                if (!token) {
+                    next.add(current);
+                }
             } else {
                 const term = sequence[current.term];
                 switch (term.type) {
                     case "terminal": {
                         if (term.terminal === token) {
                             const advanced = Parser.addOrGet({ ...current, term: current.term + 1 }, this.parseStatePool);
-                            next.push(advanced);
+                            next.add(advanced);
                         }
                         break;
                     }
@@ -275,18 +278,12 @@ class Parser<T> {
             }
         }
 
-        // console.log("==========");
-        // console.log(token);
-        // console.log("----------");
-        // for (const parseState of this.parseStates) {
-        //     console.log(stringifyParseState(parseState, this.grammar));
-        // }
-        // console.log("----------");
-        // for (const parseState of next) {
-        //     console.log(stringifyParseState(parseState, this.grammar));
-        // }
+        console.log("----------");
+        for (const parseState of next) {
+            console.log(stringifyParseState(parseState, this.grammar));
+        }
 
-        this.parseStates = next;
+        this.parseStates = Array.from(next);
         this.token += 1;
     }
 
