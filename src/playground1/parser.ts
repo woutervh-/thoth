@@ -243,7 +243,7 @@ class Parser<T> {
                 for (const parent of Array.from(current.parents)) {
                     const newParent = Parser.addOrGet({ ...parent, parents: new Set(parent.parents), term: parent.term + 1 }, this.parseStatePool);
                     remaining.push(newParent);
-                    // current.parents.delete(parent);
+                    current.parents.delete(parent);
                     current.parents.add(newParent);
                 }
             } else {
