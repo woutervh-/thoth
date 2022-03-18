@@ -254,7 +254,7 @@ class Parser<T> {
                 switch (term.type) {
                     case "terminal": {
                         if (term.terminal === token) {
-                            const advanced = Parser.addOrGet({ ...current, term: current.term + 1 }, this.parseStatePool);
+                            const advanced = Parser.addOrGet({ ...current, parents: new Set(current.parents), term: current.term + 1 }, this.parseStatePool);
                             next.add(advanced);
                         }
                         break;
